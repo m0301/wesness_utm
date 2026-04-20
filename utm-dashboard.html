@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UTM Marketing Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f8f9fb;
+    --card: #ffffff;
+    --border: #e5e7eb;
+    --text: #111827;
+    --muted: #6b7280;
+    --accent: #2563eb;
+    --accent-bg: #eff6ff;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --amber: #d97706;
+    --amber-bg: #fffbeb;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+
+  /* Header */
+  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .header-left { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 16px; height: 16px; fill: white; }
+  .logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
+  .badge-admin { background: var(--accent-bg); color: var(--accent); }
+  .badge-view { background: #f3f4f6; color: var(--muted); }
+  .btn { font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 7px; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); transition: all .15s; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-ghost { border-color: transparent; background: transparent; color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); background: var(--bg); }
+
+  /* Layout */
+  .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
+
+  /* Admin Panel */
+  .admin-panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
+  .admin-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .admin-title { font-weight: 600; font-size: 14px; }
+  .step-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 260px; }
+  .input-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .input-group input { font-size: 13px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; outline: none; background: var(--bg); color: var(--text); transition: border .15s; }
+  .input-group input:focus { border-color: var(--accent); }
+  .hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+  .hint a { color: var(--accent); text-decoration: none; }
+  .hint code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+  .status-bar { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-dot.ok { background: var(--green); }
+  .status-dot.err { background: var(--red); }
+  .status-dot.idle { background: #d1d5db; }
+  .status-dot.loading { background: var(--amber); animation: pulse .8s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
+  .status-text { font-size: 12px; color: var(--muted); }
+
+  /* KPI cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
+  .kpi-sub { font-size: 12px; color: var(--muted); }
+
+  /* Charts */
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .charts-row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
+  .chart-header { margin-bottom: 16px; }
+  .chart-name { font-size: 13px; font-weight: 600; }
+  .chart-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .chart-wrap { position: relative; }
+
+  /* Filters */
+  .filters { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .filters select { font-size: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--text); outline: none; cursor: pointer; }
+  .filters select:focus { border-color: var(--accent); }
+
+  /* Table */
+  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .table-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 9px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: #f9fafb; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+  .tag-google { background: #dbeafe; color: #1d4ed8; }
+  .tag-facebook { background: #ede9fe; color: #6d28d9; }
+  .tag-email { background: #fce7f3; color: #be185d; }
+  .tag-instagram { background: #fef3c7; color: #b45309; }
+  .tag-linkedin { background: #dcfce7; color: #15803d; }
+  .tag-organic { background: #f0fdf4; color: #166534; }
+  .tag-default { background: #f3f4f6; color: #374151; }
+  .num { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .bar-track { height: 5px; background: #e5e7eb; border-radius: 3px; flex: 1; min-width: 60px; }
+  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+
+  /* PIN Modal */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal { background: var(--card); border-radius: 14px; padding: 32px 36px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+  .pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border); background: transparent; transition: all .15s; }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .pin-key { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 18px; font-weight: 600; padding: 13px; border-radius: 8px; cursor: pointer; transition: all .12s; }
+  .pin-key:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
+  .pin-key:active { transform: scale(.96); }
+  .pin-err { font-size: 12px; color: var(--red); min-height: 18px; margin-bottom: 10px; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 10px 16px; border-radius: 8px; font-size: 12px; z-index: 200; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Empty state */
+  .empty { text-align: center; padding: 60px 20px; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+  .empty-sub { font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 900px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts-row, .charts-row2 { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h10v4H3zM3 17h14v4H3z"/></svg>
+    </div>
+    <span class="logo-text">UTM Dashboard</span>
+  </div>
+  <div class="header-right">
+    <span id="modeBadge" class="badge badge-view">View Only</span>
+    <button id="adminBtn" class="btn" onclick="openPinModal()">Admin Login</button>
+    <button id="exitBtn" class="btn btn-ghost" style="display:none" onclick="exitAdmin()">Exit Admin</button>
+  </div>
+</header>
+
+<!-- PIN Modal -->
+<div class="overlay" id="pinModal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">Admin Access</div>
+    <div class="modal-sub">Enter your 4-digit PIN</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
+      <div></div><button class="pin-key" onclick="pinKey('0')">0</button><button class="pin-key" onclick="pinKey('⌫')">⌫</button>
+    </div>
+    <div class="pin-err" id="pinErr"></div>
+    <button class="btn btn-ghost" style="width:100%" onclick="closePinModal()">Cancel</button>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- Admin Panel -->
+  <div class="admin-panel" id="adminPanel" style="display:none">
+    <div class="admin-panel-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      <span class="admin-title">Data Source — Google Sheets</span>
+    </div>
+    <div class="step-row">
+      <div class="input-group">
+        <label>Published CSV URL from Google Sheets</label>
+        <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+      </div>
+      <button class="btn btn-primary" onclick="loadFromSheet()">Load Data</button>
+      <button class="btn" onclick="loadSample()">Load Sample</button>
+    </div>
+    <div class="hint">
+      <strong>How to set up:</strong> In Google Sheets → <code>File → Share → Publish to web</code> → choose sheet → select <code>Comma-separated values (.csv)</code> → click <code>Publish</code> → paste that URL above.<br />
+      Required columns: <code>Date</code> · <code>UTM Source</code> · <code>UTM Medium</code> · <code>UTM Campaign</code> · <code>Clicks</code> · <code>Conversions</code>
+    </div>
+    <div class="status-bar">
+      <div class="status-dot idle" id="statusDot"></div>
+      <span class="status-text" id="statusText">No data loaded</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Filter:</span>
+    <select id="filterSource" onchange="applyFilter()">
+      <option value="all">All Sources</option>
+    </select>
+    <select id="filterMedium" onchange="applyFilter()">
+      <option value="all">All Mediums</option>
+    </select>
+    <select id="filterCampaign" onchange="applyFilter()">
+      <option value="all">All Campaigns</option>
+    </select>
+    <button class="btn btn-ghost" id="clearFilterBtn" style="display:none;font-size:11px" onclick="clearFilters()">✕ Clear</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Total Clicks</div><div class="kpi-value" id="kpiClicks" style="color:var(--accent)">—</div><div class="kpi-sub">across all sources</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Conversions</div><div class="kpi-value" id="kpiConv" style="color:var(--green)">—</div><div class="kpi-sub">goal completions</div></div>
+    <div class="kpi-card"><div class="kpi-label">Conv. Rate</div><div class="kpi-value" id="kpiRate" style="color:var(--amber)">—</div><div class="kpi-sub">clicks to conversions</div></div>
+    <div class="kpi-card"><div class="kpi-label">Top Source</div><div class="kpi-value" id="kpiTop" style="font-size:20px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopSub">by click volume</div></div>
+  </div>
+
+  <!-- Charts Row 1 -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-name">Clicks &amp; Conversions Over Time</div><div class="chart-desc">Aggregated by date</div></div>
+      <div class="chart-wrap"><canvas id="trendChart" height="200"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-name">Traffic by Source</div><div class="chart-desc">Click share breakdown</div></div>
+      <div class="chart-wrap"><canvas id="pieChart" height="200"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Charts Row 2 -->
+  <div class="charts-row2">
+    <div class="chart-card" style="grid-column:1/3">
+      <div class="chart-header"><div class="chart-name">Clicks by Campaign</div><div class="chart-desc">Top campaigns by volume</div></div>
+      <div class="chart-wrap"><canvas id="campChart" height="180"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header"><div class="chart-name">Conversions by Source</div><div class="chart-desc">Per channel breakdown</div></div>
+      <div class="chart-wrap"><canvas id="convChart" height="180"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-head">
+      <div><div class="chart-name">UTM Performance Breakdown</div><div class="chart-desc" id="tableCount">All tracked combinations</div></div>
+    </div>
+    <div id="tableBody"></div>
+  </div>
+
+</main>
+
+<script>
+const ADMIN_PIN = "1234";
+const SRC_COLORS = {
+  google:"#2563eb", facebook:"#7c3aed", email:"#db2777",
+  instagram:"#d97706", linkedin:"#059669", organic:"#16a34a"
+};
+const PALETTE = ["#2563eb","#7c3aed","#059669","#d97706","#db2777","#0891b2","#dc2626","#9333ea"];
+
+let rawData = [];
+let filteredData = [];
+let charts = {};
+let isAdmin = false;
+let pinBuffer = "";
+
+// ── PIN ──────────────────────────────────────────────────────────────
+function openPinModal() {
+  pinBuffer = "";
+  document.getElementById("pinModal").style.display = "flex";
+  document.getElementById("pinErr").textContent = "";
+  updateDots();
+}
+function closePinModal() {
+  document.getElementById("pinModal").style.display = "none";
+  pinBuffer = "";
+  updateDots();
+}
+function pinKey(k) {
+  if (k === "⌫") { pinBuffer = pinBuffer.slice(0, -1); document.getElementById("pinErr").textContent = ""; updateDots(); return; }
+  pinBuffer += k;
+  updateDots();
+  if (pinBuffer.length === 4) {
+    if (pinBuffer === ADMIN_PIN) {
+      isAdmin = true;
+      closePinModal();
+      document.getElementById("adminPanel").style.display = "block";
+      document.getElementById("modeBadge").className = "badge badge-admin";
+      document.getElementById("modeBadge").textContent = "Admin";
+      document.getElementById("adminBtn").style.display = "none";
+      document.getElementById("exitBtn").style.display = "";
+      showToast("Admin mode enabled");
+    } else {
+      document.getElementById("pinErr").textContent = "Incorrect PIN";
+      setTimeout(() => { pinBuffer = ""; document.getElementById("pinErr").textContent = ""; updateDots(); }, 700);
+    }
+  }
+}
+function updateDots() {
+  for (let i=0;i<4;i++) {
+    document.getElementById("d"+i).className = "pin-dot" + (i < pinBuffer.length ? " filled" : "");
+  }
+}
+function exitAdmin() {
+  isAdmin = false;
+  document.getElementById("adminPanel").style.display = "none";
+  document.getElementById("modeBadge").className = "badge badge-view";
+  document.getElementById("modeBadge").textContent = "View Only";
+  document.getElementById("adminBtn").style.display = "";
+  document.getElementById("exitBtn").style.display = "none";
+  showToast("Switched to client view");
+}
+
+// ── Status ────────────────────────────────────────────────────────────
+function setStatus(state, msg) {
+  const dot = document.getElementById("statusDot");
+  dot.className = "status-dot " + state;
+  document.getElementById("statusText").textContent = msg;
+}
+
+// ── Load Data ─────────────────────────────────────────────────────────
+async function loadFromSheet() {
+  const url = document.getElementById("sheetUrl").value.trim();
+  if (!url) { showToast("Please paste a Google Sheets CSV URL"); return; }
+  setStatus("loading", "Fetching data…");
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const csv = await res.text();
+    const parsed = parseCSV(csv);
+    if (!parsed.length) throw new Error("No valid rows found");
+    rawData = parsed;
+    populateFilters();
+    applyFilter();
+    setStatus("ok", `Loaded ${parsed.length} rows — last updated: ${new Date().toLocaleTimeString()}`);
+    showToast(`✓ ${parsed.length} rows loaded`);
+  } catch(e) {
+    setStatus("err", "Error: " + e.message + " — Make sure the sheet is published as CSV (File → Share → Publish to web)");
+    showToast("⚠ Could not load data");
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,"").toLowerCase());
+  const col = k => headers.findIndex(h => h === k.toLowerCase());
+  const cols = {
+    date: Math.max(col("date"), 0),
+    src: Math.max(col("utm source"), col("utm_source"), col("source")),
+    med: Math.max(col("utm medium"), col("utm_medium"), col("medium")),
+    camp: Math.max(col("utm campaign"), col("utm_campaign"), col("campaign")),
+    clicks: Math.max(col("clicks"), 0),
+    conv: Math.max(col("conversions"), 0),
+  };
+  return lines.slice(1).map(l => {
+    const cells = l.split(",").map(c => c.trim().replace(/^"|"$/g,""));
+    const clicks = parseInt(cells[cols.clicks]) || 0;
+    const conv = parseInt(cells[cols.conv]) || 0;
+    return { date: cells[cols.date]||"", utmSource: (cells[cols.src]||"").toLowerCase(), utmMedium: (cells[cols.med]||"").toLowerCase(), utmCampaign: cells[cols.camp]||"", clicks, conversions: conv };
+  }).filter(r => r.clicks > 0 || r.conversions > 0);
+}
+
+function loadSample() {
+  rawData = [
+    {date:"2025-01-05",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1240,conversions:98},
+    {date:"2025-01-05",utmSource:"facebook",utmMedium:"social",utmCampaign:"brand-awareness",clicks:870,conversions:42},
+    {date:"2025-01-12",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1540,conversions:134},
+    {date:"2025-01-12",utmSource:"email",utmMedium:"newsletter",utmCampaign:"jan-promo",clicks:620,conversions:87},
+    {date:"2025-01-19",utmSource:"instagram",utmMedium:"social",utmCampaign:"brand-awareness",clicks:430,conversions:29},
+    {date:"2025-01-19",utmSource:"google",utmMedium:"organic",utmCampaign:"seo-blog",clicks:980,conversions:56},
+    {date:"2025-01-26",utmSource:"email",utmMedium:"newsletter",utmCampaign:"jan-promo",clicks:710,conversions:102},
+    {date:"2025-02-02",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1890,conversions:178},
+    {date:"2025-02-02",utmSource:"linkedin",utmMedium:"social",utmCampaign:"b2b-reach",clicks:310,conversions:38},
+    {date:"2025-02-09",utmSource:"facebook",utmMedium:"social",utmCampaign:"retargeting",clicks:660,conversions:71},
+    {date:"2025-02-09",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:2100,conversions:203},
+    {date:"2025-02-16",utmSource:"email",utmMedium:"newsletter",utmCampaign:"feb-promo",clicks:840,conversions:119},
+    {date:"2025-02-16",utmSource:"instagram",utmMedium:"social",utmCampaign:"product-launch",clicks:530,conversions:44},
+    {date:"2025-02-23",utmSource:"google",utmMedium:"organic",utmCampaign:"seo-blog",clicks:1120,conversions:67},
+    {date:"2025-03-02",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:2340,conversions:241},
+  ];
+  populateFilters();
+  applyFilter();
+  setStatus("ok", "Sample data loaded");
+  showToast("✓ Sample data loaded");
+}
+
+// ── Filters ───────────────────────────────────────────────────────────
+function populateFilters() {
+  const set = (id, vals) => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="all">All ${id==="filterSource"?"Sources":id==="filterMedium"?"Mediums":"Campaigns"}</option>`;
+    vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+    if (vals.includes(cur)) sel.value = cur;
+  };
+  set("filterSource", [...new Set(rawData.map(d=>d.utmSource).filter(Boolean))].sort());
+  set("filterMedium", [...new Set(rawData.map(d=>d.utmMedium).filter(Boolean))].sort());
+  set("filterCampaign", [...new Set(rawData.map(d=>d.utmCampaign).filter(Boolean))].sort());
+}
+function applyFilter() {
+  const src = document.getElementById("filterSource").value;
+  const med = document.getElementById("filterMedium").value;
+  const camp = document.getElementById("filterCampaign").value;
+  const active = src!=="all"||med!=="all"||camp!=="all";
+  document.getElementById("clearFilterBtn").style.display = active ? "" : "none";
+  filteredData = rawData.filter(d =>
+    (src==="all"||d.utmSource===src) &&
+    (med==="all"||d.utmMedium===med) &&
+    (camp==="all"||d.utmCampaign===camp)
+  );
+  renderDashboard();
+}
+function clearFilters() {
+  ["filterSource","filterMedium","filterCampaign"].forEach(id => document.getElementById(id).value="all");
+  applyFilter();
+}
+
+// ── Render ────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const d = filteredData;
+  if (!d.length) { renderEmpty(); return; }
+
+  const totalClicks = d.reduce((s,r)=>s+r.clicks,0);
+  const totalConv = d.reduce((s,r)=>s+r.conversions,0);
+  const rate = totalClicks ? ((totalConv/totalClicks)*100).toFixed(2)+"%" : "—";
+  const srcAgg = agg(d,"utmSource");
+  const topSrc = Object.entries(srcAgg).sort((a,b)=>b[1].clicks-a[1].clicks)[0];
+
+  document.getElementById("kpiClicks").textContent = fmt(totalClicks);
+  document.getElementById("kpiConv").textContent = fmt(totalConv);
+  document.getElementById("kpiRate").textContent = rate;
+  document.getElementById("kpiTop").textContent = topSrc?.[0] || "—";
+  document.getElementById("kpiTopSub").textContent = topSrc ? fmt(topSrc[1].clicks)+" clicks" : "by click volume";
+
+  // Trend
+  const byDate = {};
+  d.forEach(r => { if(!r.date) return; if(!byDate[r.date]) byDate[r.date]={clicks:0,conv:0}; byDate[r.date].clicks+=r.clicks; byDate[r.date].conv+=r.conversions; });
+  const sorted = Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0]));
+  buildChart("trendChart","line",
+    sorted.map(([k])=>k.slice(5)),
+    [{label:"Clicks",data:sorted.map(([,v])=>v.clicks),borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.06)",tension:.35,pointRadius:3,fill:true},
+     {label:"Conversions",data:sorted.map(([,v])=>v.conv),borderColor:"#059669",backgroundColor:"rgba(5,150,105,0.06)",tension:.35,pointRadius:3,borderDash:[4,3],fill:true}]
+  );
+
+  // Pie
+  const srcKeys = Object.keys(srcAgg);
+  buildChart("pieChart","doughnut",
+    srcKeys,
+    [{data:srcKeys.map(k=>srcAgg[k].clicks),backgroundColor:srcKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:"#fff",hoverOffset:6}]
+  );
+
+  // Campaign bar
+  const campAgg = agg(d,"utmCampaign");
+  const campSorted = Object.entries(campAgg).sort((a,b)=>b[1].clicks-a[1].clicks).slice(0,8);
+  buildChart("campChart","bar",
+    campSorted.map(([k])=>k),
+    [{label:"Clicks",data:campSorted.map(([,v])=>v.clicks),backgroundColor:campSorted.map((_,i)=>i===0?"#2563eb":"rgba(37,99,235,0.25)"),borderRadius:4}]
+  );
+
+  // Conv by source
+  buildChart("convChart","bar",
+    srcKeys,
+    [{label:"Conversions",data:srcKeys.map(k=>srcAgg[k].conversions),backgroundColor:srcKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),borderRadius:4}],
+    {indexAxis:"y"}
+  );
+
+  // Table
+  const rows = buildTableRows();
+  document.getElementById("tableCount").textContent = rows.length + " source/medium/campaign combinations";
+  const maxC = Math.max(...rows.map(r=>r.clicks),1);
+  const html = `<div class="table-wrap"><table>
+    <thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th>Clicks</th><th>Conversions</th><th>Conv. Rate</th><th>Click Share</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td><span class="tag tag-${r.utmSource} tag-${SRC_COLORS[r.utmSource]?"":"default"}">${r.utmSource||"—"}</span></td>
+      <td style="color:var(--muted)">${r.utmMedium||"—"}</td>
+      <td>${r.utmCampaign||"—"}</td>
+      <td><span class="num">${fmt(r.clicks)}</span></td>
+      <td><span class="num" style="color:var(--green)">${fmt(r.conversions)}</span></td>
+      <td style="color:${parseFloat((r.conversions/r.clicks*100).toFixed(1))>10?"var(--green)":"var(--text)"}">${r.clicks?((r.conversions/r.clicks)*100).toFixed(1)+"%":"—"}</td>
+      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.clicks/maxC*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted);min-width:36px">${totalClicks?(r.clicks/totalClicks*100).toFixed(1)+"%":"—"}</span></div></td>
+    </tr>`).join("")}</tbody>
+  </table></div>`;
+  document.getElementById("tableBody").innerHTML = html;
+}
+
+function renderEmpty() {
+  ["kpiClicks","kpiConv","kpiRate","kpiTop"].forEach(id => document.getElementById(id).textContent = "—");
+  document.getElementById("tableBody").innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div><div class="empty-sub">${isAdmin?"Connect your Google Sheet or load sample data above":"Waiting for data to be loaded"}</div></div>`;
+  ["trendChart","pieChart","campChart","convChart"].forEach(id => {
+    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+    const ctx = document.getElementById(id);
+    if (ctx) { const c = ctx.getContext("2d"); c.clearRect(0,0,ctx.width,ctx.height); }
+  });
+}
+
+function agg(data, key) {
+  const obj = {};
+  data.forEach(r => {
+    const k = r[key]||"unknown";
+    if (!obj[k]) obj[k] = {clicks:0, conversions:0};
+    obj[k].clicks += r.clicks;
+    obj[k].conversions += r.conversions;
+  });
+  return obj;
+}
+
+function buildTableRows() {
+  const obj = {};
+  filteredData.forEach(r => {
+    const k = `${r.utmSource}|${r.utmMedium}|${r.utmCampaign}`;
+    if (!obj[k]) obj[k] = {...r, clicks:0, conversions:0};
+    obj[k].clicks += r.clicks;
+    obj[k].conversions += r.conversions;
+  });
+  return Object.values(obj).sort((a,b)=>b.clicks-a.clicks);
+}
+
+function buildChart(id, type, labels, datasets, extraOpts={}) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id).getContext("2d");
+  charts[id] = new Chart(ctx, {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { font: { size: 11 }, color: "#6b7280", boxWidth: 12, padding: 16 } },
+        tooltip: { backgroundColor: "#111827", titleColor: "#9ca3af", bodyColor: "#f9fafb", padding: 10, cornerRadius: 7, titleFont:{size:11}, bodyFont:{size:12} }
+      },
+      scales: type==="line"||type==="bar" ? {
+        x: { grid: { color: "#f3f4f6" }, ticks: { color: "#9ca3af", font:{size:10} } },
+        y: { grid: { color: "#f3f4f6" }, ticks: { color: "#9ca3af", font:{size:10} } }
+      } : {},
+      cutout: type==="doughnut" ? "60%" : undefined,
+      ...extraOpts
+    }
+  });
+}
+
+function fmt(n) { return n?.toLocaleString() ?? "—"; }
+
+function showToast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// Init with empty state
+renderEmpty();
+</script>
+</body>
+</html>
