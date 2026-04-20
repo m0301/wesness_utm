@@ -342,6 +342,10 @@ async function loadFromSheet() {
     const parsed = parseCSV(csv);
     if (!parsed.length) throw new Error("No valid rows found");
     rawData = parsed;
+    // ── Persist URL and data so refresh doesn't wipe it ──
+    localStorage.setItem("utm_sheet_url", url);
+    localStorage.setItem("utm_data", JSON.stringify(parsed));
+    localStorage.setItem("utm_data_time", new Date().toISOString());
     populateFilters();
     applyFilter();
     setStatus("ok", `Loaded ${parsed.length} rows — last updated: ${new Date().toLocaleTimeString()}`);
@@ -575,8 +579,25 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// Init with empty state
-renderEmpty();
+// ── Auto-restore on page load ─────────────────────────────────────────
+(function init() {
+  const savedUrl  = localStorage.getItem("utm_sheet_url");
+  const savedData = localStorage.getItem("utm_data");
+  const savedTime = localStorage.getItem("utm_data_time");
+
+  if (savedData) {
+    try {
+      rawData = JSON.parse(savedData);
+      if (savedUrl) document.getElementById("sheetUrl").value = savedUrl;
+      const when = savedTime ? new Date(savedTime).toLocaleString() : "previously";
+      populateFilters();
+      applyFilter();
+      setStatus("ok", "Restored " + rawData.length + " rows — last synced: " + when);
+    } catch(e) { renderEmpty(); }
+  } else {
+    renderEmpty();
+  }
+})();
 </script>
 </body>
 </html>
