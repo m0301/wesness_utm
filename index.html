@@ -356,21 +356,36 @@ function parseCSV(text) {
   const lines = text.trim().split("\n");
   if (lines.length < 2) return [];
   const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,"").toLowerCase());
-  const col = k => headers.findIndex(h => h === k.toLowerCase());
+  const colFind = (...keys) => { for (const k of keys) { const i = headers.findIndex(h => h === k.toLowerCase()); if (i >= 0) return i; } return 0; };
   const cols = {
-    date: Math.max(col("date"), 0),
-    src: Math.max(col("utm source"), col("utm_source"), col("source")),
-    med: Math.max(col("utm medium"), col("utm_medium"), col("medium")),
-    camp: Math.max(col("utm campaign"), col("utm_campaign"), col("campaign")),
-    clicks: Math.max(col("clicks"), 0),
-    conv: Math.max(col("conversions"), 0),
+    date:  colFind("date", "cd", "date_time", "day"),
+    src:   colFind("utm source", "utm_source", "source", "utm source"),
+    med:   colFind("utm medium", "utm_medium", "medium"),
+    camp:  colFind("utm campaign", "utm_campaign", "campaign"),
+    clicks: colFind("clicks", "click", "pageviews", "sessions"),
+    conv:  colFind("conversions", "conversion", "count(order_id)", "orders", "registrations", "signups", "count_order_id"),
   };
+  const hasClicks = headers.some(h => ["clicks","click","pageviews","sessions"].includes(h));
   return lines.slice(1).map(l => {
-    const cells = l.split(",").map(c => c.trim().replace(/^"|"$/g,""));
-    const clicks = parseInt(cells[cols.clicks]) || 0;
-    const conv = parseInt(cells[cols.conv]) || 0;
-    return { date: cells[cols.date]||"", utmSource: (cells[cols.src]||"").toLowerCase(), utmMedium: (cells[cols.med]||"").toLowerCase(), utmCampaign: cells[cols.camp]||"", clicks, conversions: conv };
+    const cells = splitCSVLine(l);
+    const conv  = parseInt(cells[cols.conv])   || 0;
+    const clicks = hasClicks ? (parseInt(cells[cols.clicks]) || 0) : conv;
+    const rawDate = cells[cols.date] || "";
+    const date = rawDate.length > 10 ? rawDate.slice(0, 10) : rawDate;
+    const src = (cells[cols.src] || "").trim().toLowerCase() || (cells[cols.med] || "").trim().toLowerCase();
+    return { date, utmSource: src, utmMedium: (cells[cols.med]||"").toLowerCase(), utmCampaign: cells[cols.camp]||"", clicks, conversions: conv };
   }).filter(r => r.clicks > 0 || r.conversions > 0);
+}
+
+function splitCSVLine(line) {
+  const cells = []; let cur = ""; let inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ""; }
+    else cur += ch;
+  }
+  cells.push(cur.trim());
+  return cells;
 }
 
 function loadSample() {
