@@ -249,6 +249,8 @@
 
 <script>
 const ADMIN_HASH = "262b06d105e1c865b01c3e0a74291cdae511ef15f3d456e14fbe2dffd9efe3b9";
+// ↓ Paste your Google Sheets CSV URL here so ALL visitors auto-load data
+const DEFAULT_SHEET_URL = "";
 const SRC_COLORS = {
   google:"#2563eb", facebook:"#7c3aed", email:"#db2777",
   instagram:"#d97706", linkedin:"#059669", organic:"#16a34a"
@@ -556,23 +558,47 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ── Auto-restore on page load ─────────────────────────────────────────
-(function init() {
-  const savedUrl  = localStorage.getItem("utm_sheet_url");
-  const savedData = localStorage.getItem("utm_data");
-  const savedTime = localStorage.getItem("utm_data_time");
+// ── Auto-load on page open (works for ALL visitors) ──────────────────
+(async function init() {
+  // Priority: DEFAULT_SHEET_URL baked in the file → saved URL in localStorage
+  const urlToUse = DEFAULT_SHEET_URL || localStorage.getItem("utm_sheet_url") || "";
 
-  if (savedData) {
-    try {
-      rawData = JSON.parse(savedData);
-      if (savedUrl) document.getElementById("sheetUrl").value = savedUrl;
-      const when = savedTime ? new Date(savedTime).toLocaleString() : "previously";
-      populateFilters();
-      applyFilter();
-      setStatus("ok", "Restored " + rawData.length + " rows — last synced: " + when);
-    } catch(e) { renderEmpty(); }
-  } else {
-    renderEmpty();
+  if (!urlToUse) { renderEmpty(); return; }
+
+  // Pre-fill the admin URL field
+  const sheetInput = document.getElementById("sheetUrl");
+  if (sheetInput) sheetInput.value = urlToUse;
+
+  setStatus("loading", "Loading data…");
+  try {
+    const res = await fetch(urlToUse);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const csv = await res.text();
+    const parsed = parseCSV(csv);
+    if (!parsed.length) throw new Error("No valid rows found");
+    rawData = parsed;
+    localStorage.setItem("utm_sheet_url", urlToUse);
+    localStorage.setItem("utm_data", JSON.stringify(parsed));
+    localStorage.setItem("utm_data_time", new Date().toISOString());
+    populateFilters();
+    applyFilter();
+    setStatus("ok", "Live data · " + parsed.length + " rows · last synced: " + new Date().toLocaleTimeString());
+  } catch(e) {
+    // If live fetch fails, fall back to cached data so client still sees something
+    const savedData = localStorage.getItem("utm_data");
+    const savedTime = localStorage.getItem("utm_data_time");
+    if (savedData) {
+      try {
+        rawData = JSON.parse(savedData);
+        const when = savedTime ? new Date(savedTime).toLocaleString() : "previously";
+        populateFilters();
+        applyFilter();
+        setStatus("idle", "Showing cached data from " + when + " (could not refresh)");
+      } catch { renderEmpty(); }
+    } else {
+      setStatus("err", "Could not load data. Check the sheet URL or network.");
+      renderEmpty();
+    }
   }
 })();
 </script>
