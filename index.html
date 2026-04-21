@@ -208,9 +208,6 @@
   <!-- Filters -->
   <div class="filters">
     <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Filter:</span>
-    <select id="filterSource" onchange="applyFilter()">
-      <option value="all">All Sources</option>
-    </select>
     <select id="filterMedium" onchange="applyFilter()">
       <option value="all">All Mediums</option>
     </select>
@@ -222,40 +219,28 @@
 
   <!-- KPIs -->
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Total Clicks</div><div class="kpi-value" id="kpiClicks" style="color:var(--accent)">—</div><div class="kpi-sub">across all sources</div></div>
-    <div class="kpi-card"><div class="kpi-label">Total Conversions</div><div class="kpi-value" id="kpiConv" style="color:var(--green)">—</div><div class="kpi-sub">goal completions</div></div>
-    <div class="kpi-card"><div class="kpi-label">Conv. Rate</div><div class="kpi-value" id="kpiRate" style="color:var(--amber)">—</div><div class="kpi-sub">clicks to conversions</div></div>
-    <div class="kpi-card"><div class="kpi-label">Top Source</div><div class="kpi-value" id="kpiTop" style="font-size:20px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopSub">by click volume</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Registrations</div><div class="kpi-value" id="kpiClicks" style="color:var(--accent)">—</div><div class="kpi-sub">across all channels</div></div>
+    <div class="kpi-card"><div class="kpi-label">Top Campaign</div><div class="kpi-value" id="kpiTopCamp" style="font-size:18px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopCampSub">by registrations</div></div>
+    <div class="kpi-card"><div class="kpi-label">Top Medium</div><div class="kpi-value" id="kpiTopMed" style="font-size:18px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopMedSub">by registrations</div></div>
+    <div class="kpi-card"><div class="kpi-label">Active Campaigns</div><div class="kpi-value" id="kpiCampCount" style="color:var(--amber)">—</div><div class="kpi-sub">unique campaigns tracked</div></div>
   </div>
 
-  <!-- Charts Row 1 -->
+  <!-- Charts -->
   <div class="charts-row">
     <div class="chart-card">
-      <div class="chart-header"><div class="chart-name">Clicks &amp; Conversions Over Time</div><div class="chart-desc">Aggregated by date</div></div>
-      <div class="chart-wrap"><canvas id="trendChart" height="200"></canvas></div>
+      <div class="chart-header"><div class="chart-name">Registrations by Campaign</div><div class="chart-desc">All campaigns ranked by registrations</div></div>
+      <div class="chart-wrap"><canvas id="campChart" height="220"></canvas></div>
     </div>
     <div class="chart-card">
-      <div class="chart-header"><div class="chart-name">Traffic by Source</div><div class="chart-desc">Click share breakdown</div></div>
-      <div class="chart-wrap"><canvas id="pieChart" height="200"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Charts Row 2 -->
-  <div class="charts-row2">
-    <div class="chart-card" style="grid-column:1/3">
-      <div class="chart-header"><div class="chart-name">Clicks by Campaign</div><div class="chart-desc">Top campaigns by volume</div></div>
-      <div class="chart-wrap"><canvas id="campChart" height="180"></canvas></div>
-    </div>
-    <div class="chart-card">
-      <div class="chart-header"><div class="chart-name">Conversions by Source</div><div class="chart-desc">Per channel breakdown</div></div>
-      <div class="chart-wrap"><canvas id="convChart" height="180"></canvas></div>
+      <div class="chart-header"><div class="chart-name">Registrations by Medium</div><div class="chart-desc">Channel share breakdown</div></div>
+      <div class="chart-wrap"><canvas id="medChart" height="220"></canvas></div>
     </div>
   </div>
 
   <!-- Table -->
   <div class="table-card">
     <div class="table-head">
-      <div><div class="chart-name">UTM Performance Breakdown</div><div class="chart-desc" id="tableCount">All tracked combinations</div></div>
+      <div><div class="chart-name">Campaign Performance</div><div class="chart-desc" id="tableCount">All tracked combinations</div></div>
     </div>
     <div id="tableBody"></div>
   </div>
@@ -425,32 +410,29 @@ function loadSample() {
 
 // ── Filters ───────────────────────────────────────────────────────────
 function populateFilters() {
-  const set = (id, vals) => {
+  const set = (id, vals, label) => {
     const sel = document.getElementById(id);
     const cur = sel.value;
-    sel.innerHTML = `<option value="all">All ${id==="filterSource"?"Sources":id==="filterMedium"?"Mediums":"Campaigns"}</option>`;
+    sel.innerHTML = `<option value="all">${label}</option>`;
     vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
     if (vals.includes(cur)) sel.value = cur;
   };
-  set("filterSource", [...new Set(rawData.map(d=>d.utmSource).filter(Boolean))].sort());
-  set("filterMedium", [...new Set(rawData.map(d=>d.utmMedium).filter(Boolean))].sort());
-  set("filterCampaign", [...new Set(rawData.map(d=>d.utmCampaign).filter(Boolean))].sort());
+  set("filterMedium",   [...new Set(rawData.map(d=>d.utmMedium).filter(Boolean))].sort(),   "All Mediums");
+  set("filterCampaign", [...new Set(rawData.map(d=>d.utmCampaign).filter(Boolean))].sort(), "All Campaigns");
 }
 function applyFilter() {
-  const src = document.getElementById("filterSource").value;
-  const med = document.getElementById("filterMedium").value;
+  const med  = document.getElementById("filterMedium").value;
   const camp = document.getElementById("filterCampaign").value;
-  const active = src!=="all"||med!=="all"||camp!=="all";
+  const active = med!=="all"||camp!=="all";
   document.getElementById("clearFilterBtn").style.display = active ? "" : "none";
   filteredData = rawData.filter(d =>
-    (src==="all"||d.utmSource===src) &&
-    (med==="all"||d.utmMedium===med) &&
-    (camp==="all"||d.utmCampaign===camp)
+    (med==="all"  || d.utmMedium===med) &&
+    (camp==="all" || d.utmCampaign===camp)
   );
   renderDashboard();
 }
 function clearFilters() {
-  ["filterSource","filterMedium","filterCampaign"].forEach(id => document.getElementById(id).value="all");
+  ["filterMedium","filterCampaign"].forEach(id => document.getElementById(id).value="all");
   applyFilter();
 }
 
@@ -459,73 +441,61 @@ function renderDashboard() {
   const d = filteredData;
   if (!d.length) { renderEmpty(); return; }
 
-  const totalClicks = d.reduce((s,r)=>s+r.clicks,0);
-  const totalConv = d.reduce((s,r)=>s+r.conversions,0);
-  const rate = totalClicks ? ((totalConv/totalClicks)*100).toFixed(2)+"%" : "—";
-  const srcAgg = agg(d,"utmSource");
-  const topSrc = Object.entries(srcAgg).sort((a,b)=>b[1].clicks-a[1].clicks)[0];
+  const totalReg   = d.reduce((s,r)=>s+r.conversions,0);
+  const campAgg    = agg(d,"utmCampaign");
+  const medAgg     = agg(d,"utmMedium");
+  const topCamp    = Object.entries(campAgg).sort((a,b)=>b[1].conversions-a[1].conversions)[0];
+  const topMed     = Object.entries(medAgg).sort((a,b)=>b[1].conversions-a[1].conversions)[0];
+  const campCount  = Object.keys(campAgg).length;
 
-  document.getElementById("kpiClicks").textContent = fmt(totalClicks);
-  document.getElementById("kpiConv").textContent = fmt(totalConv);
-  document.getElementById("kpiRate").textContent = rate;
-  document.getElementById("kpiTop").textContent = topSrc?.[0] || "—";
-  document.getElementById("kpiTopSub").textContent = topSrc ? fmt(topSrc[1].clicks)+" clicks" : "by click volume";
+  // KPIs
+  document.getElementById("kpiClicks").textContent     = fmt(totalReg);
+  document.getElementById("kpiTopCamp").textContent    = topCamp?.[0] || "—";
+  document.getElementById("kpiTopCampSub").textContent = topCamp ? fmt(topCamp[1].conversions)+" registrations" : "by registrations";
+  document.getElementById("kpiTopMed").textContent     = topMed?.[0] || "—";
+  document.getElementById("kpiTopMedSub").textContent  = topMed ? fmt(topMed[1].conversions)+" registrations" : "by registrations";
+  document.getElementById("kpiCampCount").textContent  = campCount;
 
-  // Trend
-  const byDate = {};
-  d.forEach(r => { if(!r.date) return; if(!byDate[r.date]) byDate[r.date]={clicks:0,conv:0}; byDate[r.date].clicks+=r.clicks; byDate[r.date].conv+=r.conversions; });
-  const sorted = Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0]));
-  buildChart("trendChart","line",
-    sorted.map(([k])=>k.slice(5)),
-    [{label:"Clicks",data:sorted.map(([,v])=>v.clicks),borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.06)",tension:.35,pointRadius:3,fill:true},
-     {label:"Conversions",data:sorted.map(([,v])=>v.conv),borderColor:"#059669",backgroundColor:"rgba(5,150,105,0.06)",tension:.35,pointRadius:3,borderDash:[4,3],fill:true}]
-  );
-
-  // Pie
-  const srcKeys = Object.keys(srcAgg);
-  buildChart("pieChart","doughnut",
-    srcKeys,
-    [{data:srcKeys.map(k=>srcAgg[k].clicks),backgroundColor:srcKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:"#fff",hoverOffset:6}]
-  );
-
-  // Campaign bar
-  const campAgg = agg(d,"utmCampaign");
-  const campSorted = Object.entries(campAgg).sort((a,b)=>b[1].clicks-a[1].clicks).slice(0,8);
+  // Registrations by Campaign — horizontal bar
+  const campSorted = Object.entries(campAgg).sort((a,b)=>b[1].conversions-a[1].conversions).slice(0,10);
   buildChart("campChart","bar",
     campSorted.map(([k])=>k),
-    [{label:"Clicks",data:campSorted.map(([,v])=>v.clicks),backgroundColor:campSorted.map((_,i)=>i===0?"#2563eb":"rgba(37,99,235,0.25)"),borderRadius:4}]
-  );
-
-  // Conv by source
-  buildChart("convChart","bar",
-    srcKeys,
-    [{label:"Conversions",data:srcKeys.map(k=>srcAgg[k].conversions),backgroundColor:srcKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),borderRadius:4}],
+    [{label:"Registrations", data:campSorted.map(([,v])=>v.conversions),
+      backgroundColor: campSorted.map((_,i)=>i===0?"#2563eb":PALETTE[i%PALETTE.length]+"99"),
+      borderRadius:4, borderSkipped:false}],
     {indexAxis:"y"}
   );
 
-  // Table
+  // Registrations by Medium — doughnut
+  const medKeys = Object.keys(medAgg);
+  buildChart("medChart","doughnut",
+    medKeys,
+    [{data: medKeys.map(k=>medAgg[k].conversions),
+      backgroundColor: medKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),
+      borderWidth:2, borderColor:"#fff", hoverOffset:8}]
+  );
+
+  // Table: Campaign | Medium | Registrations | Share
   const rows = buildTableRows();
-  document.getElementById("tableCount").textContent = rows.length + " source/medium/campaign combinations";
-  const maxC = Math.max(...rows.map(r=>r.clicks),1);
+  document.getElementById("tableCount").textContent = rows.length + " campaign / medium combinations";
+  const maxR = Math.max(...rows.map(r=>r.conversions),1);
   const html = `<div class="table-wrap"><table>
-    <thead><tr><th>Source</th><th>Medium</th><th>Campaign</th><th>Clicks</th><th>Conversions</th><th>Conv. Rate</th><th>Click Share</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr>
-      <td><span class="tag tag-${r.utmSource} tag-${SRC_COLORS[r.utmSource]?"":"default"}">${r.utmSource||"—"}</span></td>
-      <td style="color:var(--muted)">${r.utmMedium||"—"}</td>
-      <td>${r.utmCampaign||"—"}</td>
-      <td><span class="num">${fmt(r.clicks)}</span></td>
-      <td><span class="num" style="color:var(--green)">${fmt(r.conversions)}</span></td>
-      <td style="color:${parseFloat((r.conversions/r.clicks*100).toFixed(1))>10?"var(--green)":"var(--text)"}">${r.clicks?((r.conversions/r.clicks)*100).toFixed(1)+"%":"—"}</td>
-      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.clicks/maxC*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted);min-width:36px">${totalClicks?(r.clicks/totalClicks*100).toFixed(1)+"%":"—"}</span></div></td>
+    <thead><tr><th>#</th><th>Campaign</th><th>Medium</th><th>Registrations</th><th>Share</th></tr></thead>
+    <tbody>${rows.map((r,i)=>`<tr>
+      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+      <td style="font-weight:500">${r.utmCampaign||"—"}</td>
+      <td><span class="tag tag-${r.utmMedium||"default"}" style="background:${(SRC_COLORS[r.utmMedium]||"#6b7280")}22;color:${SRC_COLORS[r.utmMedium]||"#374151"}">${r.utmMedium||"—"}</span></td>
+      <td><span class="num">${fmt(r.conversions)}</span></td>
+      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.conversions/maxR*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted);min-width:36px">${totalReg?(r.conversions/totalReg*100).toFixed(1)+"%":"—"}</span></div></td>
     </tr>`).join("")}</tbody>
   </table></div>`;
   document.getElementById("tableBody").innerHTML = html;
 }
 
 function renderEmpty() {
-  ["kpiClicks","kpiConv","kpiRate","kpiTop"].forEach(id => document.getElementById(id).textContent = "—");
+  ["kpiClicks","kpiTopCamp","kpiTopMed","kpiCampCount"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = "—"; });
   document.getElementById("tableBody").innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div><div class="empty-sub">${isAdmin?"Connect your Google Sheet or load sample data above":"Waiting for data to be loaded"}</div></div>`;
-  ["trendChart","pieChart","campChart","convChart"].forEach(id => {
+  ["campChart","medChart"].forEach(id => {
     if (charts[id]) { charts[id].destroy(); delete charts[id]; }
     const ctx = document.getElementById(id);
     if (ctx) { const c = ctx.getContext("2d"); c.clearRect(0,0,ctx.width,ctx.height); }
