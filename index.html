@@ -285,64 +285,86 @@ function exitAdmin(){ isAdmin=false; document.getElementById("adminPanel").style
 function setStatus(state,msg){ document.getElementById("statusDot").className="status-dot "+state; document.getElementById("statusText").textContent=msg; }
 
 // ── CSV Parse ────────────────────────────────────────────────────────────────
-function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=ch; } c.push(cur.trim().replace(/^"|"$/g,"")); return c; }
+function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=ch; } c.push(cur.trim().replace(/^"|"$/g,"")); return c; } // kept for compatibility
 
 function parseCSV(text){
-  const lines = text.trim().split("\n").filter(l => l.trim());
+  const lines = text.trim().replace(/\r\n/g,"\n").replace(/\r/g,"\n").split("\n").filter(l=>l.trim());
   if(lines.length < 2) return [];
 
-  // Skip title rows — find first row that has at least 2 known column keywords
-  const knownKeys = ["date","event","campaign","medium","conversion","click","reg","utm","source"];
-  let hRow = 0;
-  for(let i = 0; i < Math.min(5, lines.length); i++){
-    const t = lines[i].toLowerCase();
-    if(knownKeys.filter(k => t.includes(k)).length >= 2){ hRow = i; break; }
+  // Auto-detect tab or comma delimiter
+  const s0 = lines[0];
+  const delim = (s0.split("\t").length > s0.split(",").length) ? "\t" : ",";
+
+  function splitLine(line){
+    if(delim==="\t") return line.split("\t").map(v=>v.trim().replace(/^"|"$/g,"").replace(/\n/g," ").trim());
+    const c=[]; let cur="",inQ=false;
+    for(const ch of line){
+      if(ch==='"'){inQ=!inQ;}
+      else if(ch===","&&!inQ){c.push(cur.trim().replace(/^"|"$/g,"").replace(/\n/g," ").trim());cur="";}
+      else cur+=ch;
+    }
+    c.push(cur.trim().replace(/^"|"$/g,"").replace(/\n/g," ").trim());
+    return c;
   }
 
-  // Parse headers — strip all quotes and whitespace
-  const headers = lines[hRow].split(",").map(h => h.trim().replace(/["\']/g,"").toLowerCase());
+  // Skip title rows — find first row with 2+ known keywords
+  const knownKeys=["date","event","campaign","medium","conversion","click","reg","utm"];
+  let hRow=0;
+  for(let i=0;i<Math.min(5,lines.length);i++){
+    if(knownKeys.filter(k=>lines[i].toLowerCase().includes(k)).length>=2){hRow=i;break;}
+  }
 
-  // Find column index — tries exact then partial match
-  const cf = (...keys) => {
-    for(const k of keys){ const i = headers.findIndex(h => h === k); if(i >= 0) return i; }
-    for(const k of keys){ const i = headers.findIndex(h => h.includes(k)); if(i >= 0) return i; }
+  const headers=splitLine(lines[hRow]).map(h=>h.toLowerCase().replace(/\n/g," ").replace(/\s+/g," ").trim());
+
+  const cf=(...keys)=>{
+    for(const k of keys){const i=headers.findIndex(h=>h===k);if(i>=0)return i;}
+    for(const k of keys){const i=headers.findIndex(h=>h.includes(k));if(i>=0)return i;}
     return -1;
   };
 
-  const cols = {
+  const cols={
     date:  cf("date","cd","day"),
     event: cf("event name","event_name","title","event"),
-    rtype: cf("reg type","reg_type","type","category","ticket"),
+    rtype: cf("reg type","reg_type","registration type","type","category","ticket"),
     src:   cf("utm_source","utm source","source"),
-    med:   cf("utm_medium","utm medium","medium"),
+    med:   cf("utm_medium","utm medium","medium","channel"),
     camp:  cf("utm_campaign","utm campaign","campaign"),
     clicks:cf("clicks","click","pageviews","sessions"),
     conv:  cf("conversions","conversion","count(order_id)","orders","registrations","signups"),
   };
 
-  const hasClicks = cols.clicks >= 0;
+  const hasClicks=cols.clicks>=0;
 
-  return lines.slice(hRow + 1).map(line => {
-    const vals = splitCSVLine(line);
-    if(vals.every(v => !v.trim())) return null;
+  function parseDate(raw){
+    if(!raw) return "";
+    raw=raw.trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0,10);
+    const p=raw.split("/");
+    if(p.length===3){
+      const y=p[2].length===4?p[2]:"20"+p[2];
+      return y+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0");
+    }
+    return raw.slice(0,10);
+  }
 
-    const conv   = cols.conv  >= 0 ? (parseInt(vals[cols.conv])   || 0) : 0;
-    const clicks = hasClicks       ? (parseInt(vals[cols.clicks]) || 0) : conv;
-    const rawDate= cols.date  >= 0 ? (vals[cols.date] || "")            : "";
-    const date   = rawDate.length > 10 ? rawDate.slice(0,10) : rawDate;
-    const med    = (cols.med  >= 0 ? (vals[cols.med]  || "") : "").trim().toLowerCase();
-    const src    = (cols.src  >= 0 ? (vals[cols.src]  || "") : "").trim().toLowerCase() || med;
-    const rtype  = (cols.rtype>= 0 ? (vals[cols.rtype]|| "") : "").trim().toUpperCase();
-
+  return lines.slice(hRow+1).map(line=>{
+    const v=splitLine(line);
+    if(v.every(x=>!x)) return null;
+    const conv  =cols.conv >=0?(parseFloat(String(v[cols.conv] ||"").replace(/[^0-9.]/g,""))||0):0;
+    const clicks=hasClicks  ?(parseFloat(String(v[cols.clicks]||"").replace(/[^0-9.]/g,""))||conv):conv;
+    const date  =parseDate(cols.date>=0?(v[cols.date]||""):"");
+    const med   =(cols.med >=0?(v[cols.med] ||""):"").trim().toLowerCase();
+    const src   =(cols.src >=0?(v[cols.src] ||""):"").trim().toLowerCase()||med;
+    const rtype =(cols.rtype>=0?(v[cols.rtype]||""):"").trim().toUpperCase();
     return {
-      date, clicks, conversions: conv,
-      eventName:   cols.event >= 0 ? (vals[cols.event] || "Wesness Event") : "Wesness Event",
-      regType:     rtype || "GA",
-      utmSource:   src,
-      utmMedium:   med,
-      utmCampaign: cols.camp >= 0 ? (vals[cols.camp] || "") : "",
+      date,clicks,conversions:conv,
+      eventName:  cols.event>=0?(v[cols.event]||"Wesness Event"):"Wesness Event",
+      regType:    rtype||"GA",
+      utmSource:  src,
+      utmMedium:  med,
+      utmCampaign:cols.camp>=0?(v[cols.camp]||""):"",
     };
-  }).filter(r => r !== null);
+  }).filter(r=>r!==null);
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -366,6 +388,9 @@ async function loadFromSheet(){
     localStorage.setItem("utm_data_time",new Date().toISOString());
     populateFilters(); applyFilter();
     setStatus("ok","Live · "+parsed.length+" rows · "+new Date().toLocaleTimeString());
+    // Debug: show first row values in console
+    if(parsed.length>0){ console.log("Sample parsed row:", parsed[0]); }
+    if(parsed.length>0 && isAdmin){ showToast("Sample: conv="+parsed[0].conversions+" med="+parsed[0].utmMedium+" camp="+parsed[0].utmCampaign); }
     showToast("✓ "+parsed.length+" rows loaded");
   }catch(e){
     setStatus("err","Error: "+e.message);
@@ -528,6 +553,9 @@ function showToast(msg){const t=document.createElement("div");t.className="toast
     localStorage.setItem("utm_data_time",new Date().toISOString());
     populateFilters(); applyFilter();
     setStatus("ok","Live · "+parsed.length+" rows · "+new Date().toLocaleTimeString());
+    // Debug: show first row values in console
+    if(parsed.length>0){ console.log("Sample parsed row:", parsed[0]); }
+    if(parsed.length>0 && isAdmin){ showToast("Sample: conv="+parsed[0].conversions+" med="+parsed[0].utmMedium+" camp="+parsed[0].utmCampaign); }
   }catch(e){
     const saved=localStorage.getItem("utm_data");
     const savedTime=localStorage.getItem("utm_data_time");
