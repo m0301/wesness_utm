@@ -1,156 +1,160 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>UTM Marketing Dashboard</title>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wesness UTM Dashboard</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #f8f9fb;
-    --card: #ffffff;
-    --border: #e5e7eb;
-    --text: #111827;
-    --muted: #6b7280;
-    --accent: #2563eb;
-    --accent-bg: #eff6ff;
-    --green: #059669;
-    --green-bg: #ecfdf5;
-    --amber: #d97706;
-    --amber-bg: #fffbeb;
-    --red: #dc2626;
-    --red-bg: #fef2f2;
-    --radius: 10px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --bg:#f8f9fb; --card:#fff; --border:#e5e7eb; --text:#111827; --muted:#6b7280;
+    --accent:#2563eb; --accent-bg:#eff6ff; --green:#059669; --green-bg:#ecfdf5;
+    --amber:#d97706; --red:#dc2626; --purple:#7c3aed; --radius:10px;
+    --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.04);
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; min-height: 100vh; }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh;}
 
   /* Header */
-  .header { background: var(--card); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-  .header-left { display: flex; align-items: center; gap: 10px; }
-  .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; }
-  .logo-icon svg { width: 16px; height: 16px; fill: white; }
-  .logo-text { font-weight: 700; font-size: 15px; letter-spacing: -0.02em; }
-  .header-right { display: flex; align-items: center; gap: 8px; }
-  .badge { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; }
-  .badge-admin { background: var(--accent-bg); color: var(--accent); }
-  .badge-view { background: #f3f4f6; color: var(--muted); }
-  .btn { font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 7px; cursor: pointer; border: 1px solid var(--border); background: var(--card); color: var(--text); transition: all .15s; }
-  .btn:hover { background: var(--bg); }
-  .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-  .btn-primary:hover { background: #1d4ed8; }
-  .btn-ghost { border-color: transparent; background: transparent; color: var(--muted); }
-  .btn-ghost:hover { color: var(--text); background: var(--bg); }
+  .header{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+  .header-left{display:flex;align-items:center;gap:10px;}
+  .logo-icon{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;}
+  .logo-icon svg{width:16px;height:16px;fill:white;}
+  .logo-text{font-weight:700;font-size:15px;letter-spacing:-0.02em;}
+  .header-right{display:flex;align-items:center;gap:8px;}
+  .badge{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;}
+  .badge-admin{background:var(--accent-bg);color:var(--accent);}
+  .badge-view{background:#f3f4f6;color:var(--muted);}
+  .btn{font-size:12px;font-weight:500;padding:6px 14px;border-radius:7px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text);transition:all .15s;}
+  .btn:hover{background:var(--bg);}
+  .btn-primary{background:var(--accent);color:white;border-color:var(--accent);}
+  .btn-primary:hover{background:#1d4ed8;}
+  .btn-ghost{border-color:transparent;background:transparent;color:var(--muted);}
+  .btn-ghost:hover{color:var(--text);background:var(--bg);}
 
   /* Layout */
-  .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
-  .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 12px; }
+  .main{max-width:1280px;margin:0 auto;padding:24px;}
 
   /* Admin Panel */
-  .admin-panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow); }
-  .admin-panel-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
-  .admin-title { font-weight: 600; font-size: 14px; }
-  .step-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
-  .input-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 260px; }
-  .input-group label { font-size: 12px; color: var(--muted); font-weight: 500; }
-  .input-group input { font-size: 13px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; outline: none; background: var(--bg); color: var(--text); transition: border .15s; }
-  .input-group input:focus { border-color: var(--accent); }
-  .hint { font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
-  .hint a { color: var(--accent); text-decoration: none; }
-  .hint code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
-  .status-bar { margin-top: 12px; display: flex; align-items: center; gap: 8px; }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
-  .status-dot.ok { background: var(--green); }
-  .status-dot.err { background: var(--red); }
-  .status-dot.idle { background: #d1d5db; }
-  .status-dot.loading { background: var(--amber); animation: pulse .8s infinite; }
-  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.4 } }
-  .status-text { font-size: 12px; color: var(--muted); }
+  .admin-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:24px;box-shadow:var(--shadow);}
+  .admin-panel-header{display:flex;align-items:center;gap:8px;margin-bottom:16px;}
+  .admin-title{font-weight:600;font-size:14px;}
+  .step-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+  .input-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:260px;}
+  .input-group label{font-size:12px;color:var(--muted);font-weight:500;}
+  .input-group input{font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:7px;outline:none;background:var(--bg);color:var(--text);transition:border .15s;}
+  .input-group input:focus{border-color:var(--accent);}
+  .hint{font-size:11px;color:var(--muted);margin-top:10px;line-height:1.6;}
+  .hint code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:11px;}
+  .status-bar{margin-top:12px;display:flex;align-items:center;gap:8px;}
+  .status-dot{width:7px;height:7px;border-radius:50%;}
+  .status-dot.ok{background:var(--green);}
+  .status-dot.err{background:var(--red);}
+  .status-dot.idle{background:#d1d5db;}
+  .status-dot.loading{background:var(--amber);animation:pulse .8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .status-text{font-size:12px;color:var(--muted);}
+
+  /* Section label */
+  .section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--border);}
+
+  /* ── EVENT SUMMARY CARDS ── */
+  .events-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:28px;}
+  .event-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  .event-card-header{padding:14px 18px 10px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#eff6ff 0%,#f8f9fb 100%);}
+  .event-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px;line-height:1.3;}
+  .event-date-range{font-size:11px;color:var(--muted);}
+  .event-card-body{padding:14px 18px;}
+  .event-total-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .event-total-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);}
+  .event-total-val{font-size:28px;font-weight:800;color:var(--accent);letter-spacing:-0.02em;}
+  .bifurcation-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;}
+  .bif-row{display:flex;gap:10px;margin-bottom:10px;}
+  .bif-chip{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center;}
+  .bif-chip.ga{border-color:#2563eb33;background:#eff6ff;}
+  .bif-chip.vip{border-color:#7c3aed33;background:#f5f3ff;}
+  .bif-chip-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+  .bif-chip.ga .bif-chip-label{color:var(--accent);}
+  .bif-chip.vip .bif-chip-label{color:var(--purple);}
+  .bif-chip-val{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
+  .bif-chip.ga .bif-chip-val{color:var(--accent);}
+  .bif-chip.vip .bif-chip-val{color:var(--purple);}
+  .bif-chip-pct{font-size:11px;color:var(--muted);}
+  .bif-bar{height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;margin-top:4px;}
+  .bif-bar-ga{height:100%;background:var(--accent);border-radius:3px;transition:width .4s;}
 
   /* KPI cards */
-  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-  .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
-  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
-  .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; margin-bottom: 4px; }
-  .kpi-sub { font-size: 12px; color: var(--muted); }
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow);}
+  .kpi-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:8px;}
+  .kpi-value{font-size:26px;font-weight:700;letter-spacing:-0.02em;line-height:1;margin-bottom:4px;}
+  .kpi-sub{font-size:12px;color:var(--muted);}
 
   /* Charts */
-  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
-  .charts-row2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
-  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow); }
-  .chart-header { margin-bottom: 16px; }
-  .chart-name { font-size: 13px; font-weight: 600; }
-  .chart-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .chart-wrap { position: relative; }
+  .charts-row{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:24px;}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);}
+  .chart-header{margin-bottom:16px;}
+  .chart-name{font-size:13px;font-weight:600;}
+  .chart-desc{font-size:11px;color:var(--muted);margin-top:2px;}
 
   /* Filters */
-  .filters { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  .filters select { font-size: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 7px; background: var(--card); color: var(--text); outline: none; cursor: pointer; }
-  .filters select:focus { border-color: var(--accent); }
+  .filters{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .filters select{font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--text);outline:none;cursor:pointer;}
+  .filters select:focus{border-color:var(--accent);}
 
   /* Table */
-  .table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-  .table-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { text-align: left; padding: 9px 14px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: #f9fafb; border-bottom: 1px solid var(--border); }
-  td { padding: 10px 14px; border-bottom: 1px solid #f3f4f6; color: var(--text); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #fafafa; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
-  .tag-google { background: #dbeafe; color: #1d4ed8; }
-  .tag-facebook { background: #ede9fe; color: #6d28d9; }
-  .tag-email { background: #fce7f3; color: #be185d; }
-  .tag-instagram { background: #fef3c7; color: #b45309; }
-  .tag-linkedin { background: #dcfce7; color: #15803d; }
-  .tag-organic { background: #f0fdf4; color: #166534; }
-  .tag-default { background: #f3f4f6; color: #374151; }
-  .num { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .bar-wrap { display: flex; align-items: center; gap: 8px; }
-  .bar-track { height: 5px; background: #e5e7eb; border-radius: 3px; flex: 1; min-width: 60px; }
-  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+  .table-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;margin-bottom:24px;}
+  .table-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .table-wrap{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{text-align:left;padding:9px 14px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);background:#f9fafb;border-bottom:1px solid var(--border);}
+  td{padding:10px 14px;border-bottom:1px solid #f3f4f6;color:var(--text);}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:#fafafa;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+  .num{font-weight:600;font-variant-numeric:tabular-nums;}
+  .bar-wrap{display:flex;align-items:center;gap:8px;}
+  .bar-track{height:5px;background:#e5e7eb;border-radius:3px;flex:1;min-width:60px;}
+  .bar-fill{height:100%;border-radius:3px;background:var(--accent);}
 
   /* PIN Modal */
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 100; }
-  .modal { background: var(--card); border-radius: 14px; padding: 32px 36px; width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,0.15); text-align: center; }
-  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-  .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-  .pin-dots { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
-  .pin-dot { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border); background: transparent; transition: all .15s; }
-  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
-  .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
-  .pin-key { background: var(--bg); border: 1px solid var(--border); color: var(--text); font-size: 18px; font-weight: 600; padding: 13px; border-radius: 8px; cursor: pointer; transition: all .12s; }
-  .pin-key:hover { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); }
-  .pin-key:active { transform: scale(.96); }
-  .pin-err { font-size: 12px; color: var(--red); min-height: 18px; margin-bottom: 10px; }
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:100;}
+  .modal{background:var(--card);border-radius:14px;padding:32px 36px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.15);text-align:center;}
+  .modal-title{font-size:18px;font-weight:700;margin-bottom:6px;}
+  .modal-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+  .pin-dots{display:flex;gap:10px;justify-content:center;margin-bottom:20px;}
+  .pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .15s;}
+  .pin-dot.filled{background:var(--accent);border-color:var(--accent);}
+  .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;}
+  .pin-key{background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:18px;font-weight:600;padding:13px;border-radius:8px;cursor:pointer;transition:all .12s;}
+  .pin-key:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+  .pin-key:active{transform:scale(.96);}
+  .pin-err{font-size:12px;color:var(--red);min-height:18px;margin-bottom:10px;}
 
   /* Toast */
-  .toast { position: fixed; bottom: 20px; right: 20px; background: #111827; color: white; padding: 10px 16px; border-radius: 8px; font-size: 12px; z-index: 200; animation: fadeIn .2s ease; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  .toast{position:fixed;bottom:20px;right:20px;background:#111827;color:white;padding:10px 16px;border-radius:8px;font-size:12px;z-index:200;animation:fadeIn .2s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-  /* Empty state */
-  .empty { text-align: center; padding: 60px 20px; }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-  .empty-sub { font-size: 13px; color: var(--muted); }
+  .empty{text-align:center;padding:60px 20px;}
+  .empty-icon{font-size:40px;margin-bottom:12px;}
+  .empty-title{font-size:15px;font-weight:600;margin-bottom:6px;}
+  .empty-sub{font-size:13px;color:var(--muted);}
 
-  @media (max-width: 900px) {
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .charts-row, .charts-row2 { grid-template-columns: 1fr; }
-    .main { padding: 16px; }
+  @media(max-width:900px){
+    .kpi-grid{grid-template-columns:repeat(2,1fr);}
+    .charts-row{grid-template-columns:1fr;}
+    .main{padding:16px;}
+    .events-grid{grid-template-columns:1fr;}
   }
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <header class="header">
   <div class="header-left">
-    <div class="logo-icon">
-      <svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h10v4H3zM3 17h14v4H3z"/></svg>
-    </div>
-    <span class="logo-text">UTM Dashboard</span>
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M3 3h18v4H3zM3 10h10v4H3zM3 17h14v4H3z"/></svg></div>
+    <span class="logo-text">Wesness UTM Dashboard</span>
   </div>
   <div class="header-right">
     <span id="modeBadge" class="badge badge-view">View Only</span>
@@ -163,7 +167,7 @@
 <div class="overlay" id="pinModal" style="display:none">
   <div class="modal">
     <div class="modal-title">Admin Access</div>
-    <div class="modal-sub">Enter your 4-digit PIN</div>
+    <div class="modal-sub">Enter your PIN</div>
     <div class="pin-dots" id="pinDots">
       <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
       <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
@@ -190,57 +194,61 @@
     <div class="step-row">
       <div class="input-group">
         <label>Published CSV URL from Google Sheets</label>
-        <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" />
+        <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"/>
       </div>
-      <button class="btn btn-primary" onclick="loadFromSheet()">Load Data</button>
-      <button class="btn" onclick="loadSample()">Load Sample</button>
+      <button class="btn btn-primary" onclick="loadFromSheet()">Refresh Data</button>
     </div>
     <div class="hint">
-      <strong>How to set up:</strong> In Google Sheets → <code>File → Share → Publish to web</code> → choose sheet → select <code>Comma-separated values (.csv)</code> → click <code>Publish</code> → paste that URL above.<br />
-      Required columns: <code>Date</code> · <code>UTM Source</code> · <code>UTM Medium</code> · <code>UTM Campaign</code> · <code>Clicks</code> · <code>Conversions</code>
+      Required columns: <code>Date</code> · <code>Event Name</code> · <code>Reg Type</code> (GA or VIP) · <code>UTM Campaign</code> · <code>UTM Medium</code> · <code>Conversions</code> · <code>Clicks</code>
     </div>
     <div class="status-bar">
       <div class="status-dot idle" id="statusDot"></div>
-      <span class="status-text" id="statusText">No data loaded</span>
+      <span class="status-text" id="statusText">Loading…</span>
     </div>
   </div>
+
+  <!-- ── SECTION 1: EVENT SUMMARY ── -->
+  <div class="section-label">Event Summary</div>
+  <div id="eventsGrid" class="events-grid">
+    <div class="empty"><div class="empty-icon">🎽</div><div class="empty-title">Loading events…</div></div>
+  </div>
+
+  <!-- ── SECTION 2: UTM PERFORMANCE ── -->
+  <div class="section-label">UTM Performance</div>
 
   <!-- Filters -->
   <div class="filters">
     <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Filter:</span>
-    <select id="filterMedium" onchange="applyFilter()">
-      <option value="all">All Mediums</option>
-    </select>
-    <select id="filterCampaign" onchange="applyFilter()">
-      <option value="all">All Campaigns</option>
-    </select>
+    <select id="filterEvent" onchange="applyFilter()"><option value="all">All Events</option></select>
+    <select id="filterMedium" onchange="applyFilter()"><option value="all">All Mediums</option></select>
+    <select id="filterCampaign" onchange="applyFilter()"><option value="all">All Campaigns</option></select>
     <button class="btn btn-ghost" id="clearFilterBtn" style="display:none;font-size:11px" onclick="clearFilters()">✕ Clear</button>
   </div>
 
   <!-- KPIs -->
   <div class="kpi-grid">
-    <div class="kpi-card"><div class="kpi-label">Total Registrations</div><div class="kpi-value" id="kpiClicks" style="color:var(--accent)">—</div><div class="kpi-sub">across all channels</div></div>
+    <div class="kpi-card"><div class="kpi-label">Total Registrations</div><div class="kpi-value" id="kpiTotal" style="color:var(--accent)">—</div><div class="kpi-sub">across all channels</div></div>
     <div class="kpi-card"><div class="kpi-label">Top Campaign</div><div class="kpi-value" id="kpiTopCamp" style="font-size:18px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopCampSub">by registrations</div></div>
     <div class="kpi-card"><div class="kpi-label">Top Medium</div><div class="kpi-value" id="kpiTopMed" style="font-size:18px;color:var(--text)">—</div><div class="kpi-sub" id="kpiTopMedSub">by registrations</div></div>
-    <div class="kpi-card"><div class="kpi-label">Active Campaigns</div><div class="kpi-value" id="kpiCampCount" style="color:var(--amber)">—</div><div class="kpi-sub">unique campaigns tracked</div></div>
+    <div class="kpi-card"><div class="kpi-label">Active Campaigns</div><div class="kpi-value" id="kpiCampCount" style="color:var(--amber)">—</div><div class="kpi-sub">unique campaigns</div></div>
   </div>
 
   <!-- Charts -->
   <div class="charts-row">
     <div class="chart-card">
       <div class="chart-header"><div class="chart-name">Registrations by Campaign</div><div class="chart-desc">All campaigns ranked by registrations</div></div>
-      <div class="chart-wrap"><canvas id="campChart" height="220"></canvas></div>
+      <canvas id="campChart" height="220"></canvas>
     </div>
     <div class="chart-card">
       <div class="chart-header"><div class="chart-name">Registrations by Medium</div><div class="chart-desc">Channel share breakdown</div></div>
-      <div class="chart-wrap"><canvas id="medChart" height="220"></canvas></div>
+      <canvas id="medChart" height="220"></canvas>
     </div>
   </div>
 
-  <!-- Table -->
+  <!-- UTM Detail Table -->
   <div class="table-card">
     <div class="table-head">
-      <div><div class="chart-name">Campaign Performance</div><div class="chart-desc" id="tableCount">All tracked combinations</div></div>
+      <div><div class="chart-name">UTM Detail Breakdown</div><div class="chart-desc" id="tableCount">—</div></div>
     </div>
     <div id="tableBody"></div>
   </div>
@@ -249,355 +257,260 @@
 
 <script>
 const ADMIN_HASH = "262b06d105e1c865b01c3e0a74291cdae511ef15f3d456e14fbe2dffd9efe3b9";
-// ↓ Paste your Google Sheets CSV URL here so ALL visitors auto-load data
 const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnG625-6jF6qprZQnGBvGTIwTGaDUCDb-JZFB4phs8zQ1Q6u30RPl0LdvbZk3G2Af2hZ7jez7TDPFR/pub?output=csv";
-const SRC_COLORS = {
-  google:"#2563eb", facebook:"#7c3aed", email:"#db2777",
-  instagram:"#d97706", linkedin:"#059669", organic:"#16a34a"
-};
-const PALETTE = ["#2563eb","#7c3aed","#059669","#d97706","#db2777","#0891b2","#dc2626","#9333ea"];
+const MED_COLORS = { metaads:"#2563eb", whatsapp:"#059669", email:"#db2777", instagram:"#d97706", linkedin:"#7c3aed", organic:"#0891b2", wap:"#059669", google:"#2563eb" };
+const PALETTE = ["#2563eb","#7c3aed","#059669","#d97706","#db2777","#0891b2","#dc2626","#9333ea","#0d9488","#b45309"];
 
-let rawData = [];
-let filteredData = [];
-let charts = {};
-let isAdmin = false;
-let pinBuffer = "";
+let rawData = [], filteredData = [], charts = {}, isAdmin = false, pinBuffer = "";
 
-// ── PIN ──────────────────────────────────────────────────────────────
-function openPinModal() {
-  pinBuffer = "";
-  document.getElementById("pinModal").style.display = "flex";
-  document.getElementById("pinErr").textContent = "";
-  updateDots();
-}
-function closePinModal() {
-  document.getElementById("pinModal").style.display = "none";
-  pinBuffer = "";
-  updateDots();
-}
-async function sha256(str) {
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
-}
-function pinKey(k) {
-  if (k === "⌫") { pinBuffer = pinBuffer.slice(0, -1); document.getElementById("pinErr").textContent = ""; updateDots(); return; }
-  if (pinBuffer.length >= 8) return;
-  pinBuffer += k;
-  updateDots();
-  if (pinBuffer.length >= 4) {
-    sha256(pinBuffer).then(hash => {
-      if (hash === ADMIN_HASH) {
-        isAdmin = true;
-        closePinModal();
-        document.getElementById("adminPanel").style.display = "block";
-        document.getElementById("modeBadge").className = "badge badge-admin";
-        document.getElementById("modeBadge").textContent = "Admin";
-        document.getElementById("adminBtn").style.display = "none";
-        document.getElementById("exitBtn").style.display = "";
-        showToast("Admin mode enabled");
-      } else if (pinBuffer.length === 8) {
-        document.getElementById("pinErr").textContent = "Incorrect PIN";
-        setTimeout(() => { pinBuffer = ""; document.getElementById("pinErr").textContent = ""; updateDots(); }, 700);
-      }
+// ── PIN ──────────────────────────────────────────────────────────────────────
+function openPinModal(){ pinBuffer=""; document.getElementById("pinModal").style.display="flex"; document.getElementById("pinErr").textContent=""; updateDots(); }
+function closePinModal(){ document.getElementById("pinModal").style.display="none"; pinBuffer=""; updateDots(); }
+async function sha256(s){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function pinKey(k){
+  if(k==="⌫"){ pinBuffer=pinBuffer.slice(0,-1); document.getElementById("pinErr").textContent=""; updateDots(); return; }
+  if(pinBuffer.length>=8) return;
+  pinBuffer+=k; updateDots();
+  if(pinBuffer.length>=4){
+    sha256(pinBuffer).then(h=>{
+      if(h===ADMIN_HASH){ isAdmin=true; closePinModal(); document.getElementById("adminPanel").style.display="block"; document.getElementById("modeBadge").className="badge badge-admin"; document.getElementById("modeBadge").textContent="Admin"; document.getElementById("adminBtn").style.display="none"; document.getElementById("exitBtn").style.display=""; showToast("Admin mode enabled"); }
+      else if(pinBuffer.length===8){ document.getElementById("pinErr").textContent="Incorrect PIN"; setTimeout(()=>{ pinBuffer=""; document.getElementById("pinErr").textContent=""; updateDots(); },700); }
     });
   }
 }
-function updateDots() {
-  for (let i=0;i<4;i++) {
-    document.getElementById("d"+i).className = "pin-dot" + (i < pinBuffer.length ? " filled" : "");
-  }
-}
-function exitAdmin() {
-  isAdmin = false;
-  document.getElementById("adminPanel").style.display = "none";
-  document.getElementById("modeBadge").className = "badge badge-view";
-  document.getElementById("modeBadge").textContent = "View Only";
-  document.getElementById("adminBtn").style.display = "";
-  document.getElementById("exitBtn").style.display = "none";
-  showToast("Switched to client view");
-}
+function updateDots(){ for(let i=0;i<4;i++) document.getElementById("d"+i).className="pin-dot"+(i<pinBuffer.length?" filled":""); }
+function exitAdmin(){ isAdmin=false; document.getElementById("adminPanel").style.display="none"; document.getElementById("modeBadge").className="badge badge-view"; document.getElementById("modeBadge").textContent="View Only"; document.getElementById("adminBtn").style.display=""; document.getElementById("exitBtn").style.display="none"; showToast("Switched to client view"); }
 
-// ── Status ────────────────────────────────────────────────────────────
-function setStatus(state, msg) {
-  const dot = document.getElementById("statusDot");
-  dot.className = "status-dot " + state;
-  document.getElementById("statusText").textContent = msg;
-}
+// ── Status ────────────────────────────────────────────────────────────────────
+function setStatus(state,msg){ document.getElementById("statusDot").className="status-dot "+state; document.getElementById("statusText").textContent=msg; }
 
-// ── Load Data ─────────────────────────────────────────────────────────
-async function loadFromSheet() {
-  const url = document.getElementById("sheetUrl").value.trim();
-  if (!url) { showToast("Please paste a Google Sheets CSV URL"); return; }
-  setStatus("loading", "Fetching data…");
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const csv = await res.text();
-    const parsed = parseCSV(csv);
-    if (!parsed.length) throw new Error("No valid rows found");
-    rawData = parsed;
-    // ── Persist URL and data so refresh doesn't wipe it ──
-    localStorage.setItem("utm_sheet_url", url);
-    localStorage.setItem("utm_data", JSON.stringify(parsed));
-    localStorage.setItem("utm_data_time", new Date().toISOString());
-    populateFilters();
-    applyFilter();
-    setStatus("ok", `Loaded ${parsed.length} rows — last updated: ${new Date().toLocaleTimeString()}`);
-    showToast(`✓ ${parsed.length} rows loaded`);
-  } catch(e) {
-    setStatus("err", "Error: " + e.message + " — Make sure the sheet is published as CSV (File → Share → Publish to web)");
-    showToast("⚠ Could not load data");
-  }
-}
+// ── CSV Parse ────────────────────────────────────────────────────────────────
+function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim());cur="";}else cur+=ch; } c.push(cur.trim()); return c; }
 
-function parseCSV(text) {
-  const lines = text.trim().split("\n");
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g,"").toLowerCase());
-  const colFind = (...keys) => { for (const k of keys) { const i = headers.findIndex(h => h === k.toLowerCase()); if (i >= 0) return i; } return 0; };
-  const cols = {
-    date:  colFind("date", "cd", "date_time", "day"),
-    src:   colFind("utm source", "utm_source", "source", "utm source"),
-    med:   colFind("utm medium", "utm_medium", "medium"),
-    camp:  colFind("utm campaign", "utm_campaign", "campaign"),
-    clicks: colFind("clicks", "click", "pageviews", "sessions"),
-    conv:  colFind("conversions", "conversion", "count(order_id)", "orders", "registrations", "signups", "count_order_id"),
+function parseCSV(text){
+  const lines=text.trim().split("\n");
+  if(lines.length<2) return [];
+  const headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,"").toLowerCase());
+  const cf=(...keys)=>{ for(const k of keys){ const i=headers.findIndex(h=>h===k.toLowerCase()); if(i>=0)return i; } return -1; };
+  const cols={
+    date:   cf("date","cd","date_time","day"),
+    event:  cf("event name","event_name","title","event"),
+    rtype:  cf("reg type","reg_type","registration type","type","ticket type","ticket_type","category"),
+    src:    cf("utm source","utm_source","source"),
+    med:    cf("utm medium","utm_medium","medium"),
+    camp:   cf("utm campaign","utm_campaign","campaign"),
+    clicks: cf("clicks","click","pageviews","sessions"),
+    conv:   cf("conversions","conversion","count(order_id)","orders","registrations","signups"),
   };
-  const hasClicks = headers.some(h => ["clicks","click","pageviews","sessions"].includes(h));
-  return lines.slice(1).map(l => {
-    const cells = splitCSVLine(l);
-    const conv  = parseInt(cells[cols.conv])   || 0;
-    const clicks = hasClicks ? (parseInt(cells[cols.clicks]) || 0) : conv;
-    const rawDate = cells[cols.date] || "";
-    const date = rawDate.length > 10 ? rawDate.slice(0, 10) : rawDate;
-    const src = (cells[cols.src] || "").trim().toLowerCase() || (cells[cols.med] || "").trim().toLowerCase();
-    return { date, utmSource: src, utmMedium: (cells[cols.med]||"").toLowerCase(), utmCampaign: cells[cols.camp]||"", clicks, conversions: conv };
-  }).filter(r => r.clicks > 0 || r.conversions > 0);
+  const hasClicks = cols.clicks>=0;
+  return lines.slice(1).map(l=>{
+    const c=splitCSVLine(l);
+    const conv=parseInt(c[cols.conv])||0;
+    const clicks=hasClicks?(parseInt(c[cols.clicks])||0):conv;
+    if(!conv&&!clicks) return null;
+    const rawDate=cols.date>=0?(c[cols.date]||""):"";
+    const date=rawDate.length>10?rawDate.slice(0,10):rawDate;
+    const med=(cols.med>=0?(c[cols.med]||""):"").trim().toLowerCase();
+    const src=(cols.src>=0?(c[cols.src]||""):"").trim().toLowerCase()||med;
+    const rtype=(cols.rtype>=0?(c[cols.rtype]||""):"").trim().toUpperCase();
+    return {
+      date, clicks, conversions:conv,
+      eventName: cols.event>=0?(c[cols.event]||""):"",
+      regType:   rtype||"GA",
+      utmSource: src, utmMedium: med,
+      utmCampaign: cols.camp>=0?(c[cols.camp]||""):"",
+    };
+  }).filter(Boolean);
 }
 
-function splitCSVLine(line) {
-  const cells = []; let cur = ""; let inQ = false;
-  for (const ch of line) {
-    if (ch === '"') { inQ = !inQ; }
-    else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ""; }
-    else cur += ch;
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadFromSheet(){
+  const url=document.getElementById("sheetUrl").value.trim();
+  if(!url){ showToast("Please paste a Google Sheets CSV URL"); return; }
+  setStatus("loading","Fetching data…");
+  try{
+    const res=await fetch(url);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const csv=await res.text();
+    const parsed=parseCSV(csv);
+    if(!parsed.length) throw new Error("No valid rows");
+    rawData=parsed;
+    localStorage.setItem("utm_sheet_url",url);
+    localStorage.setItem("utm_data",JSON.stringify(parsed));
+    localStorage.setItem("utm_data_time",new Date().toISOString());
+    populateFilters(); applyFilter();
+    setStatus("ok","Live · "+parsed.length+" rows · "+new Date().toLocaleTimeString());
+    showToast("✓ "+parsed.length+" rows loaded");
+  }catch(e){
+    setStatus("err","Error: "+e.message);
+    showToast("⚠ Could not load");
   }
-  cells.push(cur.trim());
-  return cells;
 }
 
-function loadSample() {
-  rawData = [
-    {date:"2025-01-05",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1240,conversions:98},
-    {date:"2025-01-05",utmSource:"facebook",utmMedium:"social",utmCampaign:"brand-awareness",clicks:870,conversions:42},
-    {date:"2025-01-12",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1540,conversions:134},
-    {date:"2025-01-12",utmSource:"email",utmMedium:"newsletter",utmCampaign:"jan-promo",clicks:620,conversions:87},
-    {date:"2025-01-19",utmSource:"instagram",utmMedium:"social",utmCampaign:"brand-awareness",clicks:430,conversions:29},
-    {date:"2025-01-19",utmSource:"google",utmMedium:"organic",utmCampaign:"seo-blog",clicks:980,conversions:56},
-    {date:"2025-01-26",utmSource:"email",utmMedium:"newsletter",utmCampaign:"jan-promo",clicks:710,conversions:102},
-    {date:"2025-02-02",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:1890,conversions:178},
-    {date:"2025-02-02",utmSource:"linkedin",utmMedium:"social",utmCampaign:"b2b-reach",clicks:310,conversions:38},
-    {date:"2025-02-09",utmSource:"facebook",utmMedium:"social",utmCampaign:"retargeting",clicks:660,conversions:71},
-    {date:"2025-02-09",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:2100,conversions:203},
-    {date:"2025-02-16",utmSource:"email",utmMedium:"newsletter",utmCampaign:"feb-promo",clicks:840,conversions:119},
-    {date:"2025-02-16",utmSource:"instagram",utmMedium:"social",utmCampaign:"product-launch",clicks:530,conversions:44},
-    {date:"2025-02-23",utmSource:"google",utmMedium:"organic",utmCampaign:"seo-blog",clicks:1120,conversions:67},
-    {date:"2025-03-02",utmSource:"google",utmMedium:"cpc",utmCampaign:"spring-sale",clicks:2340,conversions:241},
-  ];
-  populateFilters();
-  applyFilter();
-  setStatus("ok", "Sample data loaded");
-  showToast("✓ Sample data loaded");
+// ── Filters ───────────────────────────────────────────────────────────────────
+function populateFilters(){
+  const set=(id,vals,lbl)=>{ const s=document.getElementById(id),cur=s.value; s.innerHTML=`<option value="all">${lbl}</option>`; vals.forEach(v=>{const o=document.createElement("option");o.value=v;o.textContent=v;s.appendChild(o);}); if(vals.includes(cur))s.value=cur; };
+  set("filterEvent",  [...new Set(rawData.map(d=>d.eventName).filter(Boolean))].sort(), "All Events");
+  set("filterMedium", [...new Set(rawData.map(d=>d.utmMedium).filter(Boolean))].sort(), "All Mediums");
+  set("filterCampaign",[...new Set(rawData.map(d=>d.utmCampaign).filter(Boolean))].sort(),"All Campaigns");
 }
-
-// ── Filters ───────────────────────────────────────────────────────────
-function populateFilters() {
-  const set = (id, vals, label) => {
-    const sel = document.getElementById(id);
-    const cur = sel.value;
-    sel.innerHTML = `<option value="all">${label}</option>`;
-    vals.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
-    if (vals.includes(cur)) sel.value = cur;
-  };
-  set("filterMedium",   [...new Set(rawData.map(d=>d.utmMedium).filter(Boolean))].sort(),   "All Mediums");
-  set("filterCampaign", [...new Set(rawData.map(d=>d.utmCampaign).filter(Boolean))].sort(), "All Campaigns");
-}
-function applyFilter() {
-  const med  = document.getElementById("filterMedium").value;
-  const camp = document.getElementById("filterCampaign").value;
-  const active = med!=="all"||camp!=="all";
-  document.getElementById("clearFilterBtn").style.display = active ? "" : "none";
-  filteredData = rawData.filter(d =>
-    (med==="all"  || d.utmMedium===med) &&
-    (camp==="all" || d.utmCampaign===camp)
-  );
+function applyFilter(){
+  const ev=document.getElementById("filterEvent").value;
+  const med=document.getElementById("filterMedium").value;
+  const camp=document.getElementById("filterCampaign").value;
+  document.getElementById("clearFilterBtn").style.display=(ev!=="all"||med!=="all"||camp!=="all")?"":"none";
+  filteredData=rawData.filter(d=>(ev==="all"||d.eventName===ev)&&(med==="all"||d.utmMedium===med)&&(camp==="all"||d.utmCampaign===camp));
   renderDashboard();
 }
-function clearFilters() {
-  ["filterMedium","filterCampaign"].forEach(id => document.getElementById(id).value="all");
-  applyFilter();
+function clearFilters(){ ["filterEvent","filterMedium","filterCampaign"].forEach(id=>document.getElementById(id).value="all"); applyFilter(); }
+
+// ── Render Event Cards ────────────────────────────────────────────────────────
+function renderEventCards(){
+  const eventMap={};
+  rawData.forEach(r=>{
+    const n=r.eventName||"Unknown Event";
+    if(!eventMap[n]) eventMap[n]={total:0,ga:0,vip:0,dates:[]};
+    eventMap[n].total+=r.conversions;
+    const t=r.regType.toUpperCase();
+    if(t==="VIP") eventMap[n].vip+=r.conversions;
+    else eventMap[n].ga+=r.conversions;
+    if(r.date) eventMap[n].dates.push(r.date);
+  });
+
+  const html=Object.entries(eventMap).map(([name,ev])=>{
+    const gaPct=ev.total?Math.round(ev.ga/ev.total*100):0;
+    const dates=ev.dates.filter(Boolean).sort();
+    const dateRange=dates.length?`${dates[0]}${dates[dates.length-1]!==dates[0]?" → "+dates[dates.length-1]:""}` :"";
+    const hasVip=ev.vip>0;
+    const hasBifurcation=hasVip; // only show GA/VIP split if VIP data exists
+
+    return `<div class="event-card">
+      <div class="event-card-header">
+        <div class="event-name">${name}</div>
+        ${dateRange?`<div class="event-date-range">📅 ${dateRange}</div>`:""}
+      </div>
+      <div class="event-card-body">
+        <div class="event-total-row">
+          <div><div class="event-total-label">Total Registrations</div></div>
+          <div class="event-total-val">${ev.total.toLocaleString()}</div>
+        </div>
+        ${hasBifurcation?`
+        <div class="bifurcation-label">Registration Bifurcation</div>
+        <div class="bif-row">
+          <div class="bif-chip ga">
+            <div class="bif-chip-label">GA</div>
+            <div class="bif-chip-val">${ev.ga.toLocaleString()}</div>
+            <div class="bif-chip-pct">${gaPct}% of total</div>
+          </div>
+          <div class="bif-chip vip">
+            <div class="bif-chip-label">VIP</div>
+            <div class="bif-chip-val">${ev.vip.toLocaleString()}</div>
+            <div class="bif-chip-pct">${100-gaPct}% of total</div>
+          </div>
+        </div>
+        <div class="bif-bar"><div class="bif-bar-ga" style="width:${gaPct}%"></div></div>
+        `:`<div style="font-size:11px;color:var(--muted);margin-top:4px">Single registration category</div>`}
+      </div>
+    </div>`;
+  }).join("");
+  document.getElementById("eventsGrid").innerHTML=html||`<div class="empty"><div class="empty-icon">🎽</div><div class="empty-title">No event data</div><div class="empty-sub">Add an "Event Name" column to your sheet</div></div>`;
 }
 
-// ── Render ────────────────────────────────────────────────────────────
-function renderDashboard() {
-  const d = filteredData;
-  if (!d.length) { renderEmpty(); return; }
+// ── Render UTM Section ────────────────────────────────────────────────────────
+function renderDashboard(){
+  renderEventCards();
+  const d=filteredData;
+  if(!d.length){ renderEmptyUTM(); return; }
 
-  const totalReg   = d.reduce((s,r)=>s+r.conversions,0);
-  const campAgg    = agg(d,"utmCampaign");
-  const medAgg     = agg(d,"utmMedium");
-  const topCamp    = Object.entries(campAgg).sort((a,b)=>b[1].conversions-a[1].conversions)[0];
-  const topMed     = Object.entries(medAgg).sort((a,b)=>b[1].conversions-a[1].conversions)[0];
-  const campCount  = Object.keys(campAgg).length;
+  const totalReg=d.reduce((s,r)=>s+r.conversions,0);
+  const campAgg=agg(d,"utmCampaign"), medAgg=agg(d,"utmMedium");
+  const topCamp=Object.entries(campAgg).sort((a,b)=>b[1].c-a[1].c)[0];
+  const topMed=Object.entries(medAgg).sort((a,b)=>b[1].c-a[1].c)[0];
 
-  // KPIs
-  document.getElementById("kpiClicks").textContent     = fmt(totalReg);
-  document.getElementById("kpiTopCamp").textContent    = topCamp?.[0] || "—";
-  document.getElementById("kpiTopCampSub").textContent = topCamp ? fmt(topCamp[1].conversions)+" registrations" : "by registrations";
-  document.getElementById("kpiTopMed").textContent     = topMed?.[0] || "—";
-  document.getElementById("kpiTopMedSub").textContent  = topMed ? fmt(topMed[1].conversions)+" registrations" : "by registrations";
-  document.getElementById("kpiCampCount").textContent  = campCount;
+  document.getElementById("kpiTotal").textContent=totalReg.toLocaleString();
+  document.getElementById("kpiTopCamp").textContent=topCamp?.[0]||"—";
+  document.getElementById("kpiTopCampSub").textContent=topCamp?topCamp[1].c.toLocaleString()+" registrations":"—";
+  document.getElementById("kpiTopMed").textContent=topMed?.[0]||"—";
+  document.getElementById("kpiTopMedSub").textContent=topMed?topMed[1].c.toLocaleString()+" registrations":"—";
+  document.getElementById("kpiCampCount").textContent=Object.keys(campAgg).length;
 
-  // Registrations by Campaign — horizontal bar
-  const campSorted = Object.entries(campAgg).sort((a,b)=>b[1].conversions-a[1].conversions).slice(0,10);
-  buildChart("campChart","bar",
-    campSorted.map(([k])=>k),
-    [{label:"Registrations", data:campSorted.map(([,v])=>v.conversions),
-      backgroundColor: campSorted.map((_,i)=>i===0?"#2563eb":PALETTE[i%PALETTE.length]+"99"),
-      borderRadius:4, borderSkipped:false}],
-    {indexAxis:"y"}
-  );
+  // Campaign bar (horizontal)
+  const campSorted=Object.entries(campAgg).sort((a,b)=>b[1].c-a[1].c).slice(0,10);
+  buildChart("campChart","bar",campSorted.map(([k])=>k),
+    [{label:"Registrations",data:campSorted.map(([,v])=>v.c),backgroundColor:campSorted.map((_,i)=>PALETTE[i%PALETTE.length]+"cc"),borderRadius:4,borderSkipped:false}],
+    {indexAxis:"y"});
 
-  // Registrations by Medium — doughnut
-  const medKeys = Object.keys(medAgg);
-  buildChart("medChart","doughnut",
-    medKeys,
-    [{data: medKeys.map(k=>medAgg[k].conversions),
-      backgroundColor: medKeys.map((k,i)=>SRC_COLORS[k]||PALETTE[i%PALETTE.length]),
-      borderWidth:2, borderColor:"#fff", hoverOffset:8}]
-  );
+  // Medium doughnut
+  const medKeys=Object.keys(medAgg);
+  buildChart("medChart","doughnut",medKeys,
+    [{data:medKeys.map(k=>medAgg[k].c),backgroundColor:medKeys.map((k,i)=>MED_COLORS[k]||PALETTE[i%PALETTE.length]),borderWidth:2,borderColor:"#fff",hoverOffset:8}]);
 
-  // Table: Campaign | Medium | Registrations | Share
-  const rows = buildTableRows();
-  document.getElementById("tableCount").textContent = rows.length + " campaign / medium combinations";
-  const maxR = Math.max(...rows.map(r=>r.conversions),1);
-  const html = `<div class="table-wrap"><table>
-    <thead><tr><th>#</th><th>Campaign</th><th>Medium</th><th>Registrations</th><th>Share</th></tr></thead>
-    <tbody>${rows.map((r,i)=>`<tr>
-      <td style="color:var(--muted);font-size:11px">${i+1}</td>
+  // Detail table: Date | UTM Campaign | UTM Medium | Conversions | Clicks
+  const rows=[...d].sort((a,b)=>b.date.localeCompare(a.date)||b.conversions-a.conversions);
+  document.getElementById("tableCount").textContent=rows.length+" rows";
+  const maxC=Math.max(...rows.map(r=>r.conversions),1);
+  document.getElementById("tableBody").innerHTML=`<div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Event</th><th>UTM Campaign</th><th>UTM Medium</th><th>Conversions</th><th>Clicks</th><th>Share</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap">${r.date||"—"}</td>
+      <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.eventName}">${r.eventName||"—"}</td>
       <td style="font-weight:500">${r.utmCampaign||"—"}</td>
-      <td><span class="tag tag-${r.utmMedium||"default"}" style="background:${(SRC_COLORS[r.utmMedium]||"#6b7280")}22;color:${SRC_COLORS[r.utmMedium]||"#374151"}">${r.utmMedium||"—"}</span></td>
-      <td><span class="num">${fmt(r.conversions)}</span></td>
-      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.conversions/maxR*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted);min-width:36px">${totalReg?(r.conversions/totalReg*100).toFixed(1)+"%":"—"}</span></div></td>
+      <td><span class="tag" style="background:${(MED_COLORS[r.utmMedium]||"#6b7280")}22;color:${MED_COLORS[r.utmMedium]||"#374151"}">${r.utmMedium||"—"}</span></td>
+      <td><span class="num" style="color:var(--accent)">${r.conversions.toLocaleString()}</span></td>
+      <td><span class="num">${r.clicks.toLocaleString()}</span></td>
+      <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.conversions/maxC*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted)">${totalReg?(r.conversions/totalReg*100).toFixed(1)+"%":"—"}</span></div></td>
     </tr>`).join("")}</tbody>
   </table></div>`;
-  document.getElementById("tableBody").innerHTML = html;
 }
 
-function renderEmpty() {
-  ["kpiClicks","kpiTopCamp","kpiTopMed","kpiCampCount"].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = "—"; });
-  document.getElementById("tableBody").innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data yet</div><div class="empty-sub">${isAdmin?"Connect your Google Sheet or load sample data above":"Waiting for data to be loaded"}</div></div>`;
-  ["campChart","medChart"].forEach(id => {
-    if (charts[id]) { charts[id].destroy(); delete charts[id]; }
-    const ctx = document.getElementById(id);
-    if (ctx) { const c = ctx.getContext("2d"); c.clearRect(0,0,ctx.width,ctx.height); }
-  });
+function renderEmptyUTM(){
+  ["kpiTotal","kpiTopCamp","kpiTopMed","kpiCampCount"].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent="—";});
+  document.getElementById("tableBody").innerHTML=`<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">No data</div><div class="empty-sub">Data will appear here once your sheet is connected</div></div>`;
+  ["campChart","medChart"].forEach(id=>{if(charts[id]){charts[id].destroy();delete charts[id];}});
 }
 
-function agg(data, key) {
-  const obj = {};
-  data.forEach(r => {
-    const k = r[key]||"unknown";
-    if (!obj[k]) obj[k] = {clicks:0, conversions:0};
-    obj[k].clicks += r.clicks;
-    obj[k].conversions += r.conversions;
-  });
-  return obj;
+function agg(data,key){ const o={}; data.forEach(r=>{const k=r[key]||"unknown";if(!o[k])o[k]={c:0,cl:0};o[k].c+=r.conversions;o[k].cl+=r.clicks;}); return o; }
+
+function buildChart(id,type,labels,datasets,extra={}){
+  if(charts[id]) charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id).getContext("2d"),{type,data:{labels,datasets},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{font:{size:11},color:"#6b7280",boxWidth:12,padding:16}},tooltip:{backgroundColor:"#111827",titleColor:"#9ca3af",bodyColor:"#f9fafb",padding:10,cornerRadius:7}},scales:type==="line"||type==="bar"?{x:{grid:{color:"#f3f4f6"},ticks:{color:"#9ca3af",font:{size:10}}},y:{grid:{color:"#f3f4f6"},ticks:{color:"#9ca3af",font:{size:10}}}}:{},cutout:type==="doughnut"?"60%":undefined,...extra}});
 }
 
-function buildTableRows() {
-  const obj = {};
-  filteredData.forEach(r => {
-    const k = `${r.utmSource}|${r.utmMedium}|${r.utmCampaign}`;
-    if (!obj[k]) obj[k] = {...r, clicks:0, conversions:0};
-    obj[k].clicks += r.clicks;
-    obj[k].conversions += r.conversions;
-  });
-  return Object.values(obj).sort((a,b)=>b.clicks-a.clicks);
-}
+function fmt(n){return n?.toLocaleString()??"—";}
+function showToast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
-function buildChart(id, type, labels, datasets, extraOpts={}) {
-  if (charts[id]) charts[id].destroy();
-  const ctx = document.getElementById(id).getContext("2d");
-  charts[id] = new Chart(ctx, {
-    type,
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { font: { size: 11 }, color: "#6b7280", boxWidth: 12, padding: 16 } },
-        tooltip: { backgroundColor: "#111827", titleColor: "#9ca3af", bodyColor: "#f9fafb", padding: 10, cornerRadius: 7, titleFont:{size:11}, bodyFont:{size:12} }
-      },
-      scales: type==="line"||type==="bar" ? {
-        x: { grid: { color: "#f3f4f6" }, ticks: { color: "#9ca3af", font:{size:10} } },
-        y: { grid: { color: "#f3f4f6" }, ticks: { color: "#9ca3af", font:{size:10} } }
-      } : {},
-      cutout: type==="doughnut" ? "60%" : undefined,
-      ...extraOpts
-    }
-  });
-}
-
-function fmt(n) { return n?.toLocaleString() ?? "—"; }
-
-function showToast(msg) {
-  const t = document.createElement("div");
-  t.className = "toast"; t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-// ── Auto-load on page open (works for ALL visitors) ──────────────────
-(async function init() {
-  // Priority: DEFAULT_SHEET_URL baked in the file → saved URL in localStorage
-  const urlToUse = DEFAULT_SHEET_URL || localStorage.getItem("utm_sheet_url") || "";
-
-  if (!urlToUse) { renderEmpty(); return; }
-
-  // Pre-fill the admin URL field
-  const sheetInput = document.getElementById("sheetUrl");
-  if (sheetInput) sheetInput.value = urlToUse;
-
-  setStatus("loading", "Loading data…");
-  try {
-    const res = await fetch(urlToUse);
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const csv = await res.text();
-    const parsed = parseCSV(csv);
-    if (!parsed.length) throw new Error("No valid rows found");
-    rawData = parsed;
-    localStorage.setItem("utm_sheet_url", urlToUse);
-    localStorage.setItem("utm_data", JSON.stringify(parsed));
-    localStorage.setItem("utm_data_time", new Date().toISOString());
-    populateFilters();
-    applyFilter();
-    setStatus("ok", "Live data · " + parsed.length + " rows · last synced: " + new Date().toLocaleTimeString());
-  } catch(e) {
-    // If live fetch fails, fall back to cached data so client still sees something
-    const savedData = localStorage.getItem("utm_data");
-    const savedTime = localStorage.getItem("utm_data_time");
-    if (savedData) {
-      try {
-        rawData = JSON.parse(savedData);
-        const when = savedTime ? new Date(savedTime).toLocaleString() : "previously";
-        populateFilters();
-        applyFilter();
-        setStatus("idle", "Showing cached data from " + when + " (could not refresh)");
-      } catch { renderEmpty(); }
-    } else {
-      setStatus("err", "Could not load data. Check the sheet URL or network.");
-      renderEmpty();
+// ── Auto-load ────────────────────────────────────────────────────────────────
+(async function init(){
+  const urlToUse=DEFAULT_SHEET_URL||localStorage.getItem("utm_sheet_url")||"";
+  if(!urlToUse){renderEmptyUTM();return;}
+  const sheetInput=document.getElementById("sheetUrl");
+  if(sheetInput) sheetInput.value=urlToUse;
+  setStatus("loading","Loading data…");
+  try{
+    const res=await fetch(urlToUse);
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const csv=await res.text();
+    const parsed=parseCSV(csv);
+    if(!parsed.length) throw new Error("No valid rows");
+    rawData=parsed;
+    localStorage.setItem("utm_sheet_url",urlToUse);
+    localStorage.setItem("utm_data",JSON.stringify(parsed));
+    localStorage.setItem("utm_data_time",new Date().toISOString());
+    populateFilters(); applyFilter();
+    setStatus("ok","Live · "+parsed.length+" rows · "+new Date().toLocaleTimeString());
+  }catch(e){
+    const saved=localStorage.getItem("utm_data");
+    const savedTime=localStorage.getItem("utm_data_time");
+    if(saved){
+      try{
+        rawData=JSON.parse(saved);
+        const when=savedTime?new Date(savedTime).toLocaleString():"previously";
+        populateFilters(); applyFilter();
+        setStatus("idle","Cached data from "+when);
+      }catch{renderEmptyUTM();}
+    }else{
+      setStatus("err","Could not load: "+e.message);
+      renderEmptyUTM();
     }
   }
 })();
