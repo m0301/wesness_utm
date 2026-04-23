@@ -288,72 +288,61 @@ function setStatus(state,msg){ document.getElementById("statusDot").className="s
 function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=ch; } c.push(cur.trim().replace(/^"|"$/g,"")); return c; }
 
 function parseCSV(text){
-  const lines=text.trim().split("\n").filter(l=>l.trim());
-  if(lines.length<2){ console.warn("CSV: fewer than 2 lines"); return []; }
+  const lines = text.trim().split("\n").filter(l => l.trim());
+  if(lines.length < 2) return [];
 
-  // Auto-detect header row — skip title/merged rows that don't contain known column keywords
-  const knownKeys=["date","event","campaign","medium","conversion","click","reg","utm"];
-  let headerRowIndex=0;
-  for(let i=0;i<Math.min(5,lines.length);i++){
-    const test=lines[i].toLowerCase();
-    const matches=knownKeys.filter(k=>test.includes(k));
-    if(matches.length>=2){ headerRowIndex=i; break; }
+  // Skip title rows — find first row that has at least 2 known column keywords
+  const knownKeys = ["date","event","campaign","medium","conversion","click","reg","utm","source"];
+  let hRow = 0;
+  for(let i = 0; i < Math.min(5, lines.length); i++){
+    const t = lines[i].toLowerCase();
+    if(knownKeys.filter(k => t.includes(k)).length >= 2){ hRow = i; break; }
   }
-  if(headerRowIndex>0) console.log("Skipped "+headerRowIndex+" title row(s), headers on row "+(headerRowIndex+1));
-  const raw_headers=lines[headerRowIndex].split(",").map(h=>h.trim().replace(/^["'\s]+|["'\s]+$/g,""));
-  const headers=raw_headers.map(h=>h.toLowerCase());
-  console.log("CSV headers found:", raw_headers);
 
-  // Flexible column finder — partial match fallback
-  const cf=(...keys)=>{
-    for(const k of keys){
-      // exact match first
-      let i=headers.findIndex(h=>h===k.toLowerCase());
-      if(i>=0) return i;
-    }
-    for(const k of keys){
-      // partial match fallback
-      let i=headers.findIndex(h=>h.includes(k.toLowerCase()));
-      if(i>=0) return i;
-    }
+  // Parse headers — strip all quotes and whitespace
+  const headers = lines[hRow].split(",").map(h => h.trim().replace(/["\']/g,"").toLowerCase());
+
+  // Find column index — tries exact then partial match
+  const cf = (...keys) => {
+    for(const k of keys){ const i = headers.findIndex(h => h === k); if(i >= 0) return i; }
+    for(const k of keys){ const i = headers.findIndex(h => h.includes(k)); if(i >= 0) return i; }
     return -1;
   };
 
-  const cols={
-    date:   cf("date","cd","day","date_time"),
-    event:  cf("event name","event_name","title","event"),
-    rtype:  cf("reg type","reg_type","type","category","ticket"),
-    src:    cf("utm_source","utm source","source"),
-    med:    cf("utm_medium","utm medium","medium"),
-    camp:   cf("utm_campaign","utm campaign","campaign"),
-    clicks: cf("clicks","click","pageviews","sessions"),
-    conv:   cf("conversions","conversion","count(order_id)","count_order","orders","registrations","signups"),
+  const cols = {
+    date:  cf("date","cd","day"),
+    event: cf("event name","event_name","title","event"),
+    rtype: cf("reg type","reg_type","type","category","ticket"),
+    src:   cf("utm_source","utm source","source"),
+    med:   cf("utm_medium","utm medium","medium"),
+    camp:  cf("utm_campaign","utm campaign","campaign"),
+    clicks:cf("clicks","click","pageviews","sessions"),
+    conv:  cf("conversions","conversion","count(order_id)","orders","registrations","signups"),
   };
-  console.log("Mapped columns:", cols);
 
-  const hasClicks=cols.clicks>=0;
-  const parsed=lines.slice(1).map(l=>{
-    const c=splitCSVLine(l);
-    if(c.every(x=>!x.trim())) return null; // skip blank rows
-    const conv=parseInt(c[cols.conv])||0;
-    const clicks=hasClicks?(parseInt(c[cols.clicks])||0):conv;
-    // allow zero values — only skip if the whole line is blank
-    const rawDate=cols.date>=0?(c[cols.date]||""):"";
-    const date=rawDate.length>10?rawDate.slice(0,10):rawDate;
-    const med=(cols.med>=0?(c[cols.med]||""):"").trim().toLowerCase();
-    const src=(cols.src>=0?(c[cols.src]||""):"").trim().toLowerCase()||med;
-    const rtype=(cols.rtype>=0?(c[cols.rtype]||""):"").trim().toUpperCase();
+  const hasClicks = cols.clicks >= 0;
+
+  return lines.slice(hRow + 1).map(line => {
+    const vals = splitCSVLine(line);
+    if(vals.every(v => !v.trim())) return null;
+
+    const conv   = cols.conv  >= 0 ? (parseInt(vals[cols.conv])   || 0) : 0;
+    const clicks = hasClicks       ? (parseInt(vals[cols.clicks]) || 0) : conv;
+    const rawDate= cols.date  >= 0 ? (vals[cols.date] || "")            : "";
+    const date   = rawDate.length > 10 ? rawDate.slice(0,10) : rawDate;
+    const med    = (cols.med  >= 0 ? (vals[cols.med]  || "") : "").trim().toLowerCase();
+    const src    = (cols.src  >= 0 ? (vals[cols.src]  || "") : "").trim().toLowerCase() || med;
+    const rtype  = (cols.rtype>= 0 ? (vals[cols.rtype]|| "") : "").trim().toUpperCase();
+
     return {
-      date, clicks, conversions:conv,
-      eventName: cols.event>=0?(c[cols.event]||"Wesness Event"):"Wesness Event",
-      regType:   rtype||"GA",
-      utmSource: src, utmMedium: med,
-      utmCampaign: cols.camp>=0?(c[cols.camp]||""):"",
+      date, clicks, conversions: conv,
+      eventName:   cols.event >= 0 ? (vals[cols.event] || "Wesness Event") : "Wesness Event",
+      regType:     rtype || "GA",
+      utmSource:   src,
+      utmMedium:   med,
+      utmCampaign: cols.camp >= 0 ? (vals[cols.camp] || "") : "",
     };
   }).filter(r => r !== null);
-
-  console.log("Parsed rows:", parsed.length, "of", lines.length-1, "data lines");
-  return parsed;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -369,7 +358,7 @@ async function loadFromSheet(){
     if(!parsed.length){
       // Show the actual headers to help debug
       const firstLine = csv.trim().split("\n")[0];
-      throw new Error("No valid rows found. Your sheet headers are: [" + firstLine + "]. Make sure Conversions column has numbers > 0.");
+      const hLine = text.trim().split("\n").slice(0,3).join(" | "); throw new Error("Could not read data. First rows of your sheet: [" + hLine + "]");
     }
     rawData=parsed;
     localStorage.setItem("utm_sheet_url",url);
@@ -531,7 +520,7 @@ function showToast(msg){const t=document.createElement("div");t.className="toast
     if(!parsed.length){
       // Show the actual headers to help debug
       const firstLine = csv.trim().split("\n")[0];
-      throw new Error("No valid rows found. Your sheet headers are: [" + firstLine + "]. Make sure Conversions column has numbers > 0.");
+      const hLine = text.trim().split("\n").slice(0,3).join(" | "); throw new Error("Could not read data. First rows of your sheet: [" + hLine + "]");
     }
     rawData=parsed;
     localStorage.setItem("utm_sheet_url",urlToUse);
