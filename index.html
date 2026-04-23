@@ -257,7 +257,7 @@
 
 <script>
 const ADMIN_HASH = "262b06d105e1c865b01c3e0a74291cdae511ef15f3d456e14fbe2dffd9efe3b9";
-const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTnG625-6jF6qprZQnGBvGTIwTGaDUCDb-JZFB4phs8zQ1Q6u30RPl0LdvbZk3G2Af2hZ7jez7TDPFR/pub?output=csv";
+const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQrO7P1-d8ORrLxpjpwa2vatiXQpur2awBcl5ncnqQqaVv0F5Zj0vZZbnwMJx5ApPa18QEw5wdDyrvF/pub?output=csv";
 const MED_COLORS = { metaads:"#2563eb", whatsapp:"#059669", email:"#db2777", instagram:"#d97706", linkedin:"#7c3aed", organic:"#0891b2", wap:"#059669", google:"#2563eb" };
 const PALETTE = ["#2563eb","#7c3aed","#059669","#d97706","#db2777","#0891b2","#dc2626","#9333ea","#0d9488","#b45309"];
 
@@ -337,7 +337,7 @@ function parseCSV(text){
     if(c.every(x=>!x.trim())) return null; // skip blank rows
     const conv=parseInt(c[cols.conv])||0;
     const clicks=hasClicks?(parseInt(c[cols.clicks])||0):conv;
-    if(!conv&&!clicks&&!cells.some(c=>c.trim())) return null;
+    // allow zero values — only skip if the whole line is blank
     const rawDate=cols.date>=0?(c[cols.date]||""):"";
     const date=rawDate.length>10?rawDate.slice(0,10):rawDate;
     const med=(cols.med>=0?(c[cols.med]||""):"").trim().toLowerCase();
@@ -350,7 +350,7 @@ function parseCSV(text){
       utmSource: src, utmMedium: med,
       utmCampaign: cols.camp>=0?(c[cols.camp]||""):"",
     };
-  }).filter(Boolean);
+  }).filter(r => r !== null);
 
   console.log("Parsed rows:", parsed.length, "of", lines.length-1, "data lines");
   return parsed;
