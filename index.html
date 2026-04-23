@@ -285,7 +285,7 @@ function exitAdmin(){ isAdmin=false; document.getElementById("adminPanel").style
 function setStatus(state,msg){ document.getElementById("statusDot").className="status-dot "+state; document.getElementById("statusText").textContent=msg; }
 
 // ── CSV Parse ────────────────────────────────────────────────────────────────
-function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim());cur="";}else cur+=ch; } c.push(cur.trim()); return c; }
+function splitCSVLine(line){ const c=[]; let cur="",inQ=false; for(const ch of line){ if(ch==='"'){inQ=!inQ;}else if(ch===','&&!inQ){c.push(cur.trim().replace(/^"|"$/g,""));cur="";}else cur+=ch; } c.push(cur.trim().replace(/^"|"$/g,"")); return c; }
 
 function parseCSV(text){
   const lines=text.trim().split("\n").filter(l=>l.trim());
@@ -300,7 +300,7 @@ function parseCSV(text){
     if(matches.length>=2){ headerRowIndex=i; break; }
   }
   if(headerRowIndex>0) console.log("Skipped "+headerRowIndex+" title row(s), headers on row "+(headerRowIndex+1));
-  const raw_headers=lines[headerRowIndex].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
+  const raw_headers=lines[headerRowIndex].split(",").map(h=>h.trim().replace(/^["'\s]+|["'\s]+$/g,""));
   const headers=raw_headers.map(h=>h.toLowerCase());
   console.log("CSV headers found:", raw_headers);
 
@@ -337,7 +337,7 @@ function parseCSV(text){
     if(c.every(x=>!x.trim())) return null; // skip blank rows
     const conv=parseInt(c[cols.conv])||0;
     const clicks=hasClicks?(parseInt(c[cols.clicks])||0):conv;
-    if(!conv&&!clicks) return null;
+    if(!conv&&!clicks&&!cells.some(c=>c.trim())) return null;
     const rawDate=cols.date>=0?(c[cols.date]||""):"";
     const date=rawDate.length>10?rawDate.slice(0,10):rawDate;
     const med=(cols.med>=0?(c[cols.med]||""):"").trim().toLowerCase();
