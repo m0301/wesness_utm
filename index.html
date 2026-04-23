@@ -291,7 +291,16 @@ function parseCSV(text){
   const lines=text.trim().split("\n").filter(l=>l.trim());
   if(lines.length<2){ console.warn("CSV: fewer than 2 lines"); return []; }
 
-  const raw_headers=lines[0].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
+  // Auto-detect header row — skip title/merged rows that don't contain known column keywords
+  const knownKeys=["date","event","campaign","medium","conversion","click","reg","utm"];
+  let headerRowIndex=0;
+  for(let i=0;i<Math.min(5,lines.length);i++){
+    const test=lines[i].toLowerCase();
+    const matches=knownKeys.filter(k=>test.includes(k));
+    if(matches.length>=2){ headerRowIndex=i; break; }
+  }
+  if(headerRowIndex>0) console.log("Skipped "+headerRowIndex+" title row(s), headers on row "+(headerRowIndex+1));
+  const raw_headers=lines[headerRowIndex].split(",").map(h=>h.trim().replace(/^"|"$/g,""));
   const headers=raw_headers.map(h=>h.toLowerCase());
   console.log("CSV headers found:", raw_headers);
 
