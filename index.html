@@ -323,14 +323,15 @@ function parseCSV(text){
   };
 
   const cols={
-    date:  cf("date","cd","day"),
-    event: cf("event name","event_name","title","event"),
-    rtype: cf("reg type","reg_type","registration type","type","category","ticket"),
-    src:   cf("utm_source","utm source","source"),
-    med:   cf("utm_medium","utm medium","medium","channel"),
-    camp:  cf("utm_campaign","utm campaign","campaign"),
-    clicks:cf("clicks","click","pageviews","sessions"),
-    conv:  cf("conversions","conversion","count(order_id)","orders","registrations","signups"),
+    date:     cf("date","cd","day"),
+    event:    cf("event name","event_name","title","event"),
+    rtype:    cf("reg type","reg_type","registration type","type","category","ticket"),
+    src:      cf("utm_source","utm source","source"),
+    med:      cf("utm_medium","utm medium","medium","channel"),
+    camp:     cf("utm_campaign","utm campaign","campaign"),
+    clicks:   cf("clicks","click","pageviews","sessions"),
+    conv:     cf("conversions","conversion","count(order_id)","orders","registrations","signups"),
+    attendees:cf("attendees","attended","attendance","actual attendance","showed up","turnout"),
   };
 
   const hasClicks=cols.clicks>=0;
@@ -356,8 +357,9 @@ function parseCSV(text){
     const med   =(cols.med >=0?(v[cols.med] ||""):"").trim().toLowerCase();
     const src   =(cols.src >=0?(v[cols.src] ||""):"").trim().toLowerCase()||med;
     const rtype =(cols.rtype>=0?(v[cols.rtype]||""):"").trim().toUpperCase();
+    const attendees = cols.attendees>=0?(parseFloat(String(v[cols.attendees]||"").replace(/[^0-9.]/g,""))||0):0;
     return {
-      date,clicks,conversions:conv,
+      date,clicks,conversions:conv,attendees,
       eventName:  cols.event>=0?(v[cols.event]||"Wesness Event"):"Wesness Event",
       regType:    rtype||"GA",
       utmSource:  src,
@@ -420,8 +422,9 @@ function renderEventCards(){
   const eventMap={};
   rawData.forEach(r=>{
     const n=r.eventName||"Unknown Event";
-    if(!eventMap[n]) eventMap[n]={total:0,ga:0,vip:0,dates:[]};
+    if(!eventMap[n]) eventMap[n]={total:0,ga:0,vip:0,attendees:0,dates:[]};
     eventMap[n].total+=r.conversions;
+    eventMap[n].attendees+=r.attendees||0;
     const t=r.regType.toUpperCase();
     if(t==="VIP") eventMap[n].vip+=r.conversions;
     else eventMap[n].ga+=r.conversions;
@@ -445,6 +448,19 @@ function renderEventCards(){
           <div><div class="event-total-label">Total Registrations</div></div>
           <div class="event-total-val">${ev.total.toLocaleString()}</div>
         </div>
+        ${ev.attendees>0?`
+        <div style="display:flex;gap:10px;margin-bottom:14px">
+          <div style="flex:1;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#059669;margin-bottom:4px">Attendees</div>
+            <div style="font-size:22px;font-weight:800;color:#059669">${ev.attendees.toLocaleString()}</div>
+            <div style="font-size:11px;color:#6b7280">${ev.total?Math.round(ev.attendees/ev.total*100):0}% attendance rate</div>
+          </div>
+          <div style="flex:1;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 12px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#d97706;margin-bottom:4px">No Shows</div>
+            <div style="font-size:22px;font-weight:800;color:#d97706">${(ev.total-ev.attendees).toLocaleString()}</div>
+            <div style="font-size:11px;color:#6b7280">${ev.total?Math.round((ev.total-ev.attendees)/ev.total*100):0}% drop-off</div>
+          </div>
+        </div>`:``}
         ${hasBifurcation?`
         <div class="bifurcation-label">Registration Bifurcation</div>
         <div class="bif-row">
@@ -501,13 +517,14 @@ function renderDashboard(){
   document.getElementById("tableCount").textContent=rows.length+" rows";
   const maxC=Math.max(...rows.map(r=>r.conversions),1);
   document.getElementById("tableBody").innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>Date</th><th>Event</th><th>UTM Campaign</th><th>UTM Medium</th><th>Conversions</th><th>Clicks</th><th>Share</th></tr></thead>
+    <thead><tr><th>Date</th><th>Event</th><th>UTM Campaign</th><th>UTM Medium</th><th>Registrations</th><th>Attendees</th><th>Clicks</th><th>Share</th></tr></thead>
     <tbody>${rows.map(r=>`<tr>
       <td style="color:var(--muted);font-size:11px;white-space:nowrap">${r.date||"—"}</td>
       <td style="font-size:11px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.eventName}">${r.eventName||"—"}</td>
       <td style="font-weight:500">${r.utmCampaign||"—"}</td>
       <td><span class="tag" style="background:${(MED_COLORS[r.utmMedium]||"#6b7280")}22;color:${MED_COLORS[r.utmMedium]||"#374151"}">${r.utmMedium||"—"}</span></td>
       <td><span class="num" style="color:var(--accent)">${r.conversions.toLocaleString()}</span></td>
+      <td><span class="num" style="color:var(--green)">${r.attendees>0?r.attendees.toLocaleString():"—"}</span></td>
       <td><span class="num">${r.clicks.toLocaleString()}</span></td>
       <td><div class="bar-wrap"><div class="bar-track"><div class="bar-fill" style="width:${(r.conversions/maxC*100).toFixed(1)}%"></div></div><span style="font-size:11px;color:var(--muted)">${totalReg?(r.conversions/totalReg*100).toFixed(1)+"%":"—"}</span></div></td>
     </tr>`).join("")}</tbody>
