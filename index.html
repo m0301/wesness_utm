@@ -6,7 +6,6 @@
 <title>Wesness Event Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 /* ── Tokens ─────────────────────────────────────────────────── */
@@ -80,19 +79,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 }
 .admin-panel-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;margin-bottom:4px;}
 .admin-panel-sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
-.upload-zone{
-  border:2px dashed rgba(193,53,132,0.3);border-radius:var(--radius);
-  padding:32px;text-align:center;cursor:pointer;transition:all .2s;
-  background:linear-gradient(135deg,rgba(123,47,247,0.02),rgba(193,53,132,0.02));
-}
-.upload-zone:hover,.upload-zone.drag{
-  border-color:var(--accent);
-  background:linear-gradient(135deg,rgba(123,47,247,0.05),rgba(193,53,132,0.05));
-}
-.upload-icon{font-size:32px;margin-bottom:10px;display:block;}
-.upload-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px;}
-.upload-hint{font-size:12px;color:var(--muted);margin-bottom:12px;}
-.upload-cols{font-size:11px;color:var(--accent);background:var(--accent-light);padding:6px 14px;border-radius:20px;display:inline-block;font-weight:500;}
+/* upload zone styles removed - now using sheet URL input */
 .status-bar{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .status-left{display:flex;align-items:center;gap:8px;}
 .status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
@@ -312,41 +299,30 @@ tr:hover td{background:rgba(123,47,247,0.02);}
 
 <main class="main">
 
-  <!-- Admin Upload -->
+  <!-- Admin Panel -->
   <div id="adminPanel" style="display:none">
     <div class="admin-panel">
-      <div class="admin-panel-title">📁 Upload Event Data</div>
-      <div class="admin-panel-sub">Drag & drop your Excel file. Data is stored locally — clients see it automatically on their next visit.</div>
-      <input type="file" id="fileInput" accept=".xlsx,.xls" style="display:none" onchange="handleFile(this.files[0])"/>
-      <div class="upload-zone" id="uploadZone"
-        onclick="document.getElementById('fileInput').click()"
-        ondragover="event.preventDefault();this.classList.add('drag')"
-        ondragleave="this.classList.remove('drag')"
-        ondrop="event.preventDefault();this.classList.remove('drag');handleFile(event.dataTransfer.files[0])">
-        <span class="upload-icon">⬆️</span>
-        <div class="upload-title">Drop your Excel file here</div>
-        <div class="upload-hint">Supports .xlsx and .xls — click to browse</div>
-        <div class="upload-cols">Columns: Event · Category · Campaign · Medium · Source · Date · order_count</div>
+      <div class="admin-panel-title">🔗 Google Sheets Data Source</div>
+      <div class="admin-panel-sub">Paste your published Google Sheets CSV URL below. All visitors will load live data automatically.</div>
+      <div style="display:flex;gap:10px;align-items:flex-end;margin-top:4px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Published CSV URL</div>
+          <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"
+            style="width:100%;font-size:13px;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);outline:none;font-family:'Inter',sans-serif;color:var(--text);background:var(--bg);transition:border .15s;"
+            onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"/>
+        </div>
+        <button class="btn-publish" onclick="loadFromSheet()" style="white-space:nowrap;padding:10px 20px;">Load Data</button>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--muted);line-height:1.7;">
+        <strong>How to get this URL:</strong> Google Sheets → <code style="background:#F5F3F9;padding:1px 5px;border-radius:4px;font-size:11px;">File → Share → Publish to web</code> → select your sheet tab → choose <code style="background:#F5F3F9;padding:1px 5px;border-radius:4px;font-size:11px;">CSV</code> → Publish → copy URL<br/>
+        <strong>Required columns:</strong> Event · Category · Campaign · Medium · Source · Date · order_count
       </div>
       <div class="status-bar">
         <div class="status-left">
           <div class="status-dot idle" id="statusDot"></div>
           <span class="status-text" id="statusText">No data loaded</span>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-publish" id="publishBtn" style="display:none" onclick="publishData()">⬆ Publish for Everyone</button>
-          <button class="btn btn-danger" onclick="clearData()">Clear Data</button>
-        </div>
-      </div>
-      <div id="publishGuide" style="display:none;margin-top:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;">
-        <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:6px;">✅ data.json downloaded — now do this:</div>
-        <div style="font-size:12px;color:#047857;line-height:1.9;">
-          1. Go to <strong>github.com</strong> → your <strong>utm-dashboard</strong> repo<br/>
-          2. Click <strong>Add file → Upload files</strong><br/>
-          3. Drag the downloaded <strong>data.json</strong> file<br/>
-          4. Click <strong>Commit changes</strong><br/>
-          5. Wait 30 seconds → <strong>everyone now sees your data</strong> ✓
-        </div>
+        <button class="btn btn-danger" onclick="clearSheet()">Clear</button>
       </div>
     </div>
   </div>
@@ -414,6 +390,7 @@ tr:hover td{background:rgba(123,47,247,0.02);}
 <script>
 const ADMIN_HASH="262b06d105e1c865b01c3e0a74291cdae511ef15f3d456e14fbe2dffd9efe3b9";
 const STORAGE_KEY="wesness_v5";
+const DEFAULT_SHEET_URL="https://docs.google.com/spreadsheets/d/e/2PACX-1vQrO7P1-d8ORrLxpjpwa2vatiXQpur2awBcl5ncnqQqaVv0F5Zj0vZZbnwMJx5ApPa18QEw5wdDyrvF/pub?output=csv";
 
 const SOURCE_COLORS={
   "ir-wa":"#0284c7","ir-em":"#0891b2","ir-ads":"#2563eb",
@@ -458,69 +435,147 @@ function exitAdmin(){isAdmin=false;document.getElementById("adminPanel").style.d
 // ── Status ───────────────────────────────────────────────────
 function setStatus(state,msg){document.getElementById("statusDot").className="status-dot "+state;document.getElementById("statusText").textContent=msg;}
 
-// ── Excel Upload ─────────────────────────────────────────────
-function handleFile(file){
-  if(!file)return;
-  setStatus("loading","Reading "+file.name+"…");
-  const reader=new FileReader();
-  reader.onload=e=>{
-    try{
-      const wb=XLSX.read(e.target.result,{type:"array",cellDates:true});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const json=XLSX.utils.sheet_to_json(ws,{raw:false,dateNF:"yyyy-mm-dd"});
-      if(!json.length)throw new Error("No data rows found");
-      const keys=Object.keys(json[0]);
-      const cf=(...names)=>keys.find(k=>names.some(n=>k.toLowerCase().replace(/[_\s]/g,"").includes(n.toLowerCase().replace(/[_\s]/g,""))));
-      const cEvent=cf("event","eventname"),cCat=cf("category","cat","type","regtype"),cCamp=cf("campaign"),cMed=cf("medium");
-      const cSrc=cf("source"),cDate=cf("date","day","cd"),cOrders=cf("order_count","ordercount","conversions","orders","registrations","count");
-      const cClicks=cf("clicks"),cAtt=cf("attendees","attended");
-      const parsed=json.map(row=>{
-        const rawDate=cDate?String(row[cDate]||""):"";
-        let date=rawDate.slice(0,10);
-        if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(rawDate)){const[m,d,y]=rawDate.split("/");date=y+"-"+m.padStart(2,"0")+"-"+d.padStart(2,"0");}
-        const catRaw=cCat?String(row[cCat]||"").trim():"";
-        const catKey=catRaw.toLowerCase().includes("2k")?"2k":catRaw.toLowerCase().includes("5k")?"5k":catRaw.toLowerCase().includes("3k")?"3k":"other";
-        return{
-          date,eventName:cEvent?String(row[cEvent]||"").trim():"Unknown",
-          category:catRaw,catKey,
-          campaign:cCamp?String(row[cCamp]||"").trim():"",
-          medium:cMed?String(row[cMed]||"").trim().toLowerCase():"",
-          source:cSrc?String(row[cSrc]||"").trim().toLowerCase():"",
-          conversions:cOrders?(parseFloat(String(row[cOrders]||"0").replace(/[^0-9.]/g,""))||0):0,
-          clicks:cClicks?(parseFloat(String(row[cClicks]||"0").replace(/[^0-9.]/g,""))||0):0,
-          attendees:cAtt?(parseFloat(String(row[cAtt]||"0").replace(/[^0-9.]/g,""))||0):0,
-        };
-      }).filter(r=>r.eventName&&r.eventName!=="Unknown");
-      rawData=parsed;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));
-      localStorage.setItem(STORAGE_KEY+"_time",new Date().toISOString());
-      populateFilters();applyFilter();
-      setStatus("ok","✓ "+parsed.length+" rows loaded from "+file.name+" · "+new Date().toLocaleTimeString());
-      document.getElementById("publishBtn").style.display="";
-      document.getElementById("publishGuide").style.display="none";
-      showToast("✓ "+parsed.length+" rows loaded — click Publish to share with everyone");
-    }catch(err){setStatus("err","Error: "+err.message);showToast("⚠ "+err.message);}
-  };
-  reader.readAsArrayBuffer(file);
-}
-function clearData(){
-  if(!confirm("Clear all data?"))return;
-  rawData=[];filteredData=[];
-  localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY+"_time");
-  document.getElementById("publishBtn").style.display="none";
-  document.getElementById("publishGuide").style.display="none";
-  populateFilters();renderEmpty();setStatus("idle","Data cleared");showToast("Data cleared");
+// ── CSV helpers ───────────────────────────────────────────────
+function splitLine(line, delim){
+  if(delim==="	") return line.split("	").map(v=>v.trim().replace(/^"|"$/g,"").replace(/
+/g," "));
+  const c=[];let cur="",inQ=false;
+  for(const ch of line){
+    if(ch==='"'){inQ=!inQ;}
+    else if(ch===","&&!inQ){c.push(cur.trim().replace(/^"|"$/g,"").replace(/
+/g," "));cur="";}
+    else cur+=ch;
+  }
+  c.push(cur.trim().replace(/^"|"$/g,"").replace(/
+/g," "));
+  return c;
 }
 
-function publishData(){
-  if(!rawData.length){showToast("No data to publish");return;}
-  const blob=new Blob([JSON.stringify({data:rawData,published:new Date().toISOString()})],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="data.json";
-  a.click();
-  document.getElementById("publishGuide").style.display="block";
-  showToast("✓ data.json downloaded — upload it to GitHub");
+function parseDate(raw){
+  if(!raw) return "";
+  raw = raw.trim();
+  // YYYY-MM-DD
+  if(/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0,10);
+  // M/D/YYYY or MM/DD/YYYY
+  const p = raw.split("/");
+  if(p.length===3){
+    const y = p[2].length===4 ? p[2] : "20"+p[2];
+    return y+"-"+p[0].padStart(2,"0")+"-"+p[1].padStart(2,"0");
+  }
+  return raw.slice(0,10);
+}
+
+function parseCSV(text){
+  const lines = text.trim().replace(/
+/g,"
+").replace(/
+/g,"
+").split("
+").filter(l=>l.trim());
+  if(lines.length < 2) return [];
+
+  // Auto-detect delimiter
+  const s0 = lines[0];
+  const delim = (s0.split("	").length > s0.split(",").length) ? "	" : ",";
+
+  // Find header row (skip title rows)
+  const knownKeys = ["event","category","campaign","medium","source","date","order","conversion","click"];
+  let hRow = 0;
+  for(let i=0; i<Math.min(5,lines.length); i++){
+    if(knownKeys.filter(k=>lines[i].toLowerCase().includes(k)).length >= 2){ hRow=i; break; }
+  }
+
+  // Parse headers — strip quotes + normalise
+  const headers = splitLine(lines[hRow], delim).map(h => h.toLowerCase().replace(/[
+
+]/g," ").replace(/\s+/g," ").trim());
+
+  // Column finder — exact first, partial fallback
+  const cf = (...keys) => {
+    for(const k of keys){ const i=headers.findIndex(h=>h===k); if(i>=0) return i; }
+    for(const k of keys){ const i=headers.findIndex(h=>h.includes(k)); if(i>=0) return i; }
+    return -1;
+  };
+
+  // Map exactly to your sheet: Event, Category, Campaign, Medium, Source, Date, order_count
+  const cols = {
+    event:  cf("event name","event"),
+    cat:    cf("category","cat","reg type","type","ticket"),
+    camp:   cf("utm campaign","utm_campaign","campaign"),
+    med:    cf("utm medium","utm_medium","medium"),
+    src:    cf("utm source","utm_source","source"),
+    date:   cf("date","day","cd"),
+    conv:   cf("order_count","order count","conversions","conversion","orders","registrations","signups"),
+    clicks: cf("clicks","click"),
+    att:    cf("attendees","attended","attendance"),
+  };
+
+  return lines.slice(hRow+1).map(line => {
+    const v = splitLine(line, delim);
+    if(v.every(x=>!x.trim())) return null;
+
+    const conv    = cols.conv   >= 0 ? (parseFloat(String(v[cols.conv]  ||"").replace(/[^0-9.]/g,""))||0) : 0;
+    const clicks  = cols.clicks >= 0 ? (parseFloat(String(v[cols.clicks]||"").replace(/[^0-9.]/g,""))||0) : conv;
+    const att     = cols.att    >= 0 ? (parseFloat(String(v[cols.att]   ||"").replace(/[^0-9.]/g,""))||0) : 0;
+    const date    = parseDate(cols.date >= 0 ? (v[cols.date]||"") : "");
+    const med     = (cols.med >= 0 ? (v[cols.med]||"") : "").trim().toLowerCase();
+    const src     = (cols.src >= 0 ? (v[cols.src]||"") : "").trim().toLowerCase() || med;
+    const catRaw  = (cols.cat >= 0 ? (v[cols.cat]||"") : "").trim();
+    const catLow  = catRaw.toLowerCase();
+
+    // Extract ticket size from category string e.g. "3K Sundowner Event" → "3k"
+    const catKey  = catLow.includes("2k") ? "2k"
+                  : catLow.includes("5k") ? "5k"
+                  : catLow.includes("3k") ? "3k"
+                  : catLow === "vip"      ? "vip"
+                  : catLow === "ga"       ? "ga"
+                  : "other";
+
+    const evName  = cols.event >= 0 ? (v[cols.event]||"Wesness Event").trim() : "Wesness Event";
+    if(!evName || evName === "Event") return null;
+
+    return {
+      date, clicks, conversions: conv, attendees: att,
+      eventName:  evName,
+      category:   catRaw,
+      catKey,
+      source:     src,
+      medium:     med,
+      campaign:   cols.camp >= 0 ? (v[cols.camp]||"").trim() : "",
+    };
+  }).filter(r => r !== null);
+}
+
+// ── Load from Google Sheets ───────────────────────────────────
+async function loadFromSheet(url){
+  url=url||document.getElementById("sheetUrl").value.trim();
+  if(!url){showToast("Please paste a Google Sheets CSV URL");return;}
+  setStatus("loading","Fetching data…");
+  try{
+    const res=await fetch(url);
+    if(!res.ok)throw new Error("HTTP "+res.status+" — check the URL");
+    const csv=await res.text();
+    const parsed=parseCSV(csv);
+    if(!parsed.length)throw new Error("No valid rows found — check your column headers");
+    rawData=parsed;
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(parsed));
+    localStorage.setItem(STORAGE_KEY+"_url",url);
+    localStorage.setItem(STORAGE_KEY+"_time",new Date().toISOString());
+    populateFilters();applyFilter();
+    setStatus("ok","✓ "+parsed.length+" rows · live from Google Sheets · "+new Date().toLocaleTimeString());
+    showToast("✓ "+parsed.length+" rows loaded");
+  }catch(e){
+    // Fallback to cache
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(saved){try{rawData=JSON.parse(saved);populateFilters();applyFilter();setStatus("idle","Showing cached data — could not refresh: "+e.message);}catch{}}
+    else{setStatus("err","Error: "+e.message);showToast("⚠ "+e.message);}
+  }
+}
+function clearSheet(){
+  rawData=[];filteredData=[];
+  localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY+"_url");localStorage.removeItem(STORAGE_KEY+"_time");
+  document.getElementById("sheetUrl").value="";
+  populateFilters();renderEmpty();setStatus("idle","Cleared");showToast("Cleared");
 }
 
 // ── Filters ──────────────────────────────────────────────────
@@ -697,41 +752,20 @@ function fmt(n){return n!=null?Number(n).toLocaleString("en-IN"):"—";}
 function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function showToast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
-// ── Init — fetch data.json from server first, fallback to localStorage ──
+// ── Init — auto-load from Google Sheets ──────────────────────
 (async function(){
-  // Try fetching published data.json from the same domain (works on Vercel)
-  try{
-    const res=await fetch("./data.json?v="+Date.now(),{cache:"no-store"});
-    if(res.ok){
-      const json=await res.json();
-      if(json.data&&json.data.length){
-        rawData=json.data;
-        // Also cache locally
-        localStorage.setItem(STORAGE_KEY,JSON.stringify(rawData));
-        localStorage.setItem(STORAGE_KEY+"_time",json.published||new Date().toISOString());
-        populateFilters();applyFilter();
-        const when=json.published?new Date(json.published).toLocaleString():"recently";
-        setStatus("ok","✓ Live data · "+rawData.length+" rows · published "+when);
-        return;
-      }
-    }
-  }catch(e){
-    // No data.json yet — fall through to localStorage
+  const url=DEFAULT_SHEET_URL||localStorage.getItem(STORAGE_KEY+"_url")||"";
+  const sheetInput=document.getElementById("sheetUrl");
+  if(url&&sheetInput)sheetInput.value=url;
+  if(url){
+    await loadFromSheet(url);
+  }else{
+    // fallback to cached
+    const saved=localStorage.getItem(STORAGE_KEY);
+    if(saved){try{rawData=JSON.parse(saved);populateFilters();applyFilter();setStatus("idle","Cached data loaded");}catch{renderEmpty();}}
+    else renderEmpty();
   }
-
-  // Fallback: localStorage (admin's own browser)
-  const saved=localStorage.getItem(STORAGE_KEY);
-  const when=localStorage.getItem(STORAGE_KEY+"_time");
-  if(saved){
-    try{
-      rawData=JSON.parse(saved);
-      populateFilters();applyFilter();
-      setStatus("ok","Local data · "+rawData.length+" rows · upload data.json to GitHub to share with everyone");
-      if(isAdmin) document.getElementById("publishBtn").style.display="";
-    }catch{renderEmpty();}
-  }else renderEmpty();
 })();
 </script>
 </body>
 </html>
-{"data":[{"date":"2026-08-11","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":5,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-16","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-10","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-11","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-14","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-15","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-16","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-19","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-08","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-15","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":5,"clicks":0,"attendees":0},{"date":"2026-08-09","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-17","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-11","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":6,"clicks":0,"attendees":0},{"date":"2026-08-17","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":3,"clicks":0,"attendees":0},{"date":"2026-08-09","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"reengage-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"reengage-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"reengage-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-19","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"reengage-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-07","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness","medium":"instagram","source":"wesness","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness","medium":"instagram","source":"wesness","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-10","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"social","source":"ig","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"social","source":"ig","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"social","source":"ig","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-17","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"social","source":"ig","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"social","source":"ig","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"whatsapp","source":"wesness-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-08","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wse","source":"wesness-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wse","source":"wesness-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-11","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wsw","source":"wesness-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wsw","source":"wesness-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wsw","source":"wesness-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-15","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wsw","source":"wesness-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-10","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"wesness-sundowner","medium":"wsw","source":"wesness-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-03","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"meta","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-04","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-06","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":5,"clicks":0,"attendees":0},{"date":"2026-08-07","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-08","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-10","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"wap","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-11","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":7,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":3,"clicks":0,"attendees":0},{"date":"2026-08-14","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-16","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-17","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Sundowner Mumbai 2026","category":"3K Sundowner Event","catKey":"3k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":5,"clicks":0,"attendees":0},{"date":"2026-08-19","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"wp","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":5,"clicks":0,"attendees":0},{"date":"2026-08-18","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":18,"clicks":0,"attendees":0},{"date":"2026-08-17","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-16","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":8,"clicks":0,"attendees":0},{"date":"2026-08-15","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":3,"clicks":0,"attendees":0},{"date":"2026-08-15","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"wp","source":"ir-reg","conversions":3,"clicks":0,"attendees":0},{"date":"2026-08-14","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":4,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":9,"clicks":0,"attendees":0},{"date":"2026-08-13","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"wp","source":"ir-reg","conversions":2,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":10,"clicks":0,"attendees":0},{"date":"2026-08-12","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"wp","source":"ir-reg","conversions":1,"clicks":0,"attendees":0},{"date":"2026-08-11","eventName":"Wesness Run2zumba Bengaluru 2026","category":"2K Run + Zumba session","catKey":"2k","campaign":"ir-reg","medium":"email","source":"ir-reg","conversions":7,"clicks":0,"attendees":0}],"published":"2026-08-19T06:36:45.689Z"}
