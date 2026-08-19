@@ -59,6 +59,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .btn-ghost:hover{background:var(--muted-bg);}
 .btn-danger{background:transparent;color:var(--red);border:1px solid #fecaca;font-size:11px;}
 .btn-danger:hover{background:#fef2f2;}
+.btn-publish{background:linear-gradient(135deg,#5B1EAF,#C13584);color:#fff;border:none;font-size:12px;font-weight:600;padding:7px 16px;border-radius:8px;cursor:pointer;box-shadow:0 2px 8px rgba(193,53,132,0.3);transition:all .15s;font-family:'Inter',sans-serif;}
+.btn-publish:hover{box-shadow:0 4px 16px rgba(193,53,132,0.4);transform:translateY(-1px);}
 
 /* ── Layout ────────────────────────────────────────────────── */
 .main{max-width:1300px;margin:0 auto;padding:28px 32px;}
@@ -331,7 +333,20 @@ tr:hover td{background:rgba(123,47,247,0.02);}
           <div class="status-dot idle" id="statusDot"></div>
           <span class="status-text" id="statusText">No data loaded</span>
         </div>
-        <button class="btn btn-danger" onclick="clearData()">Clear Data</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-publish" id="publishBtn" style="display:none" onclick="publishData()">⬆ Publish for Everyone</button>
+          <button class="btn btn-danger" onclick="clearData()">Clear Data</button>
+        </div>
+      </div>
+      <div id="publishGuide" style="display:none;margin-top:14px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:#065F46;margin-bottom:6px;">✅ data.json downloaded — now do this:</div>
+        <div style="font-size:12px;color:#047857;line-height:1.9;">
+          1. Go to <strong>github.com</strong> → your <strong>utm-dashboard</strong> repo<br/>
+          2. Click <strong>Add file → Upload files</strong><br/>
+          3. Drag the downloaded <strong>data.json</strong> file<br/>
+          4. Click <strong>Commit changes</strong><br/>
+          5. Wait 30 seconds → <strong>everyone now sees your data</strong> ✓
+        </div>
       </div>
     </div>
   </div>
@@ -481,7 +496,9 @@ function handleFile(file){
       localStorage.setItem(STORAGE_KEY+"_time",new Date().toISOString());
       populateFilters();applyFilter();
       setStatus("ok","✓ "+parsed.length+" rows loaded from "+file.name+" · "+new Date().toLocaleTimeString());
-      showToast("✓ "+parsed.length+" rows loaded");
+      document.getElementById("publishBtn").style.display="";
+      document.getElementById("publishGuide").style.display="none";
+      showToast("✓ "+parsed.length+" rows loaded — click Publish to share with everyone");
     }catch(err){setStatus("err","Error: "+err.message);showToast("⚠ "+err.message);}
   };
   reader.readAsArrayBuffer(file);
@@ -490,7 +507,20 @@ function clearData(){
   if(!confirm("Clear all data?"))return;
   rawData=[];filteredData=[];
   localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(STORAGE_KEY+"_time");
+  document.getElementById("publishBtn").style.display="none";
+  document.getElementById("publishGuide").style.display="none";
   populateFilters();renderEmpty();setStatus("idle","Data cleared");showToast("Data cleared");
+}
+
+function publishData(){
+  if(!rawData.length){showToast("No data to publish");return;}
+  const blob=new Blob([JSON.stringify({data:rawData,published:new Date().toISOString()})],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="data.json";
+  a.click();
+  document.getElementById("publishGuide").style.display="block";
+  showToast("✓ data.json downloaded — upload it to GitHub");
 }
 
 // ── Filters ──────────────────────────────────────────────────
@@ -667,13 +697,38 @@ function fmt(n){return n!=null?Number(n).toLocaleString("en-IN"):"—";}
 function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function showToast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
-// ── Init ─────────────────────────────────────────────────────
-(function(){
+// ── Init — fetch data.json from server first, fallback to localStorage ──
+(async function(){
+  // Try fetching published data.json from the same domain (works on Vercel)
+  try{
+    const res=await fetch("./data.json?v="+Date.now(),{cache:"no-store"});
+    if(res.ok){
+      const json=await res.json();
+      if(json.data&&json.data.length){
+        rawData=json.data;
+        // Also cache locally
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(rawData));
+        localStorage.setItem(STORAGE_KEY+"_time",json.published||new Date().toISOString());
+        populateFilters();applyFilter();
+        const when=json.published?new Date(json.published).toLocaleString():"recently";
+        setStatus("ok","✓ Live data · "+rawData.length+" rows · published "+when);
+        return;
+      }
+    }
+  }catch(e){
+    // No data.json yet — fall through to localStorage
+  }
+
+  // Fallback: localStorage (admin's own browser)
   const saved=localStorage.getItem(STORAGE_KEY);
   const when=localStorage.getItem(STORAGE_KEY+"_time");
   if(saved){
-    try{rawData=JSON.parse(saved);populateFilters();applyFilter();setStatus("ok","Restored "+rawData.length+" rows · last uploaded "+(when?new Date(when).toLocaleString():"previously"));}
-    catch{renderEmpty();}
+    try{
+      rawData=JSON.parse(saved);
+      populateFilters();applyFilter();
+      setStatus("ok","Local data · "+rawData.length+" rows · upload data.json to GitHub to share with everyone");
+      if(isAdmin) document.getElementById("publishBtn").style.display="";
+    }catch{renderEmpty();}
   }else renderEmpty();
 })();
 </script>
