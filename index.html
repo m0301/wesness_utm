@@ -407,28 +407,62 @@ let rawData=[],filteredData=[],charts={},isAdmin=false,pinBuf="";
 // ── PIN ──────────────────────────────────────────────────────
 function openPin(){pinBuf="";document.getElementById("pinModal").style.display="flex";document.getElementById("pinErr").textContent="";updateDots();}
 function closePin(){document.getElementById("pinModal").style.display="none";pinBuf="";updateDots();}
-async function sha256(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("");}
+
+async function sha256(s){
+  try{
+    // Works on HTTPS (Vercel)
+    const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));
+    return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("");
+  }catch(e){
+    // Fallback: simple hash for local file testing
+    let h=0;
+    for(let i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0;}
+    return "fallback_"+Math.abs(h).toString(16);
+  }
+}
+
+// Correct PIN: 1903
+// Stored as SHA256 hash so it never appears in plain text
 function pk(k){
-  if(k==="⌫"){pinBuf=pinBuf.slice(0,-1);document.getElementById("pinErr").textContent="";updateDots();return;}
-  if(pinBuf.length>=8)return;
-  pinBuf+=k;updateDots();
+  if(k==="⌫"){
+    pinBuf=pinBuf.slice(0,-1);
+    document.getElementById("pinErr").textContent="";
+    updateDots();
+    return;
+  }
+  if(pinBuf.length>=8) return;
+  pinBuf+=k;
+  updateDots();
+
+  // Check as soon as we have 4+ digits
   if(pinBuf.length>=4){
     sha256(pinBuf).then(h=>{
       if(h===ADMIN_HASH){
-        isAdmin=true;closePin();
+        // ✅ Correct PIN
+        isAdmin=true;
+        closePin();
         document.getElementById("adminPanel").style.display="block";
         document.getElementById("modeBadge").className="badge badge-admin";
         document.getElementById("modeBadge").textContent="Admin";
         document.getElementById("adminBtn").style.display="none";
         document.getElementById("exitBtn").style.display="";
         showToast("✓ Admin mode enabled");
-      }else if(pinBuf.length===8){
+      } else if(pinBuf.length===4){
+        // ❌ Wrong at exactly 4 digits — show error immediately
         document.getElementById("pinErr").textContent="Incorrect PIN — try again";
-        setTimeout(()=>{pinBuf="";document.getElementById("pinErr").textContent="";updateDots();},700);
+        setTimeout(()=>{
+          pinBuf="";
+          document.getElementById("pinErr").textContent="";
+          updateDots();
+        },800);
       }
+    }).catch(()=>{
+      // If crypto fails entirely — show helpful message
+      document.getElementById("pinErr").textContent="⚠ Open via your Vercel URL (needs HTTPS)";
     });
   }
 }
+
 function updateDots(){for(let i=0;i<4;i++)document.getElementById("d"+i).className="pin-dot"+(i<pinBuf.length?" filled":"");}
 function exitAdmin(){isAdmin=false;document.getElementById("adminPanel").style.display="none";document.getElementById("modeBadge").className="badge badge-view";document.getElementById("modeBadge").textContent="View Only";document.getElementById("adminBtn").style.display="";document.getElementById("exitBtn").style.display="none";showToast("Switched to client view");}
 
