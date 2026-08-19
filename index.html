@@ -214,6 +214,18 @@ tr:hover td{background:rgba(123,47,247,0.02);}
 .bar-track{height:4px;background:#F0EFF4;border-radius:2px;min-width:80px;}
 .bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#7B2FF7,#C13584);}
 
+/* ── Breakdown Table ─────────────────────────────────────── */
+.breakdown-table{margin-top:20px;border-top:1px solid var(--border);padding-top:16px;}
+.breakdown-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.04);}
+.breakdown-row:last-child{border-bottom:none;}
+.breakdown-rank{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:#C4B5D4;width:18px;text-align:center;flex-shrink:0;}
+.breakdown-name{flex:1;font-size:12px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.breakdown-bar-wrap{width:80px;flex-shrink:0;}
+.breakdown-bar-track{height:4px;background:#F0EEF5;border-radius:2px;}
+.breakdown-bar-fill{height:100%;border-radius:2px;}
+.breakdown-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text);width:40px;text-align:right;flex-shrink:0;}
+.breakdown-pct{font-size:10px;color:var(--muted);width:34px;text-align:right;flex-shrink:0;}
+
 /* ── PIN Modal ─────────────────────────────────────────────── */
 .overlay{position:fixed;inset:0;background:rgba(26,21,35,0.6);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(6px);}
 .modal{
@@ -365,29 +377,22 @@ tr:hover td{background:rgba(123,47,247,0.02);}
   <!-- Source & Medium Breakdown -->
   <div class="section-label">Channel Performance</div>
   <div class="charts-row">
+    <!-- Source -->
     <div class="chart-card">
       <div class="chart-name">Registrations by Source</div>
-      <div class="chart-desc">ir-wa · ir-em · ir-ads · wes-wa · wes-wp · wes-wc · wes-insta · fb · ig + all others</div>
-      <canvas id="sourceChart" height="220"></canvas>
+      <div class="chart-desc">All traffic sources ranked by registrations</div>
+      <canvas id="sourceChart" height="180"></canvas>
+      <div class="breakdown-table" id="sourceBreakdown"></div>
     </div>
+    <!-- Medium -->
     <div class="chart-card">
       <div class="chart-name">Registrations by Medium</div>
-      <div class="chart-desc">Paid · organic · social · whatsapp · email</div>
-      <canvas id="medChart" height="220"></canvas>
+      <div class="chart-desc">All mediums ranked by registrations</div>
+      <canvas id="medChart" height="180"></canvas>
+      <div class="breakdown-table" id="medBreakdown"></div>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="section-label">Full Breakdown</div>
-  <div class="table-card">
-    <div class="table-head">
-      <div>
-        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;">Registration Detail</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px;" id="tCount">—</div>
-      </div>
-    </div>
-    <div id="tableBody"></div>
-  </div>
 
 </main>
 
@@ -566,23 +571,29 @@ function renderDashboard(){
     borderRadius:6,borderSkipped:false
   }],{indexAxis:"y"});
 
-  // Table
-  const rows=[...d].sort((a,b)=>b.date.localeCompare(a.date)||b.conversions-a.conversions);
-  const maxC=Math.max(...rows.map(r=>r.conversions),1);
-  set("tCount",fmt(rows.length)+" rows");
-  document.getElementById("tableBody").innerHTML=`<div class="table-wrap"><table>
-    <thead><tr><th>Date</th><th>Event</th><th>Category</th><th>Source</th><th>Medium</th><th>Campaign</th><th>Registrations</th><th>Share</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr>
-      <td style="color:var(--muted);white-space:nowrap;font-size:11px">${r.date||"—"}</td>
-      <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500" title="${r.eventName}">${r.eventName}</td>
-      <td><span class="tag" style="background:${CAT_COLORS[r.catKey]||"#6b7280"}20;color:${CAT_COLORS[r.catKey]||"#6b7280"}">${r.catKey.toUpperCase()}</span></td>
-      <td><span class="tag" style="background:${(SOURCE_COLORS[r.source]||"#6b7280")}18;color:${SOURCE_COLORS[r.source]||"#374151"}">${r.source||"—"}</span></td>
-      <td style="color:var(--muted);font-size:12px">${r.medium||"—"}</td>
-      <td style="font-size:11px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.campaign||"—"}</td>
-      <td><span class="num" style="color:var(--accent)">${fmt(r.conversions)}</span></td>
-      <td style="min-width:100px"><div class="bar-track"><div class="bar-fill" style="width:${(r.conversions/maxC*100).toFixed(1)}%"></div></div></td>
-    </tr>`).join("")}</tbody>
-  </table></div>`;
+  // Source breakdown table
+  const srcTotal=srcS.reduce((s,[,v])=>s+v,0);
+  document.getElementById("sourceBreakdown").innerHTML=srcS.map(([k,v],i)=>`
+    <div class="breakdown-row">
+      <div class="breakdown-rank">${i+1}</div>
+      <div class="breakdown-name" title="${k}">${k}</div>
+      <div class="breakdown-bar-wrap"><div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width:${srcTotal?(v/srcTotal*100).toFixed(1):0}%;background:${SOURCE_COLORS[k]||PALETTE[i%PALETTE.length]}"></div></div></div>
+      <div class="breakdown-val">${fmt(v)}</div>
+      <div class="breakdown-pct">${srcTotal?(v/srcTotal*100).toFixed(1):0}%</div>
+    </div>`).join("");
+
+  // Medium breakdown table
+  const medTotal=medS.reduce((s,[,v])=>s+v,0);
+  document.getElementById("medBreakdown").innerHTML=medS.map(([k,v],i)=>`
+    <div class="breakdown-row">
+      <div class="breakdown-rank">${i+1}</div>
+      <div class="breakdown-name" title="${k}">${k}</div>
+      <div class="breakdown-bar-wrap"><div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width:${medTotal?(v/medTotal*100).toFixed(1):0}%;background:${PALETTE[i%PALETTE.length]}"></div></div></div>
+      <div class="breakdown-val">${fmt(v)}</div>
+      <div class="breakdown-pct">${medTotal?(v/medTotal*100).toFixed(1):0}%</div>
+    </div>`).join("");
+
+  // Table removed per request
 }
 
 function renderEventCards(d){
@@ -631,7 +642,7 @@ function renderEmpty(){
   ["kTotal","kEvents","kTopSource","kTopCamp","kDays"].forEach(id=>set(id,"—"));
   set("kDateRange","days of data");set("kTopSourceSub","by registrations");set("kTopCampSub","by registrations");
   document.getElementById("eventsGrid").innerHTML=`<div class="empty"><span class="empty-icon">📊</span><div class="empty-title">No data loaded</div><div class="empty-sub">${isAdmin?"Upload your Excel file above to get started":"Data will appear here — check back soon"}</div></div>`;
-  document.getElementById("tableBody").innerHTML="";
+
   ["trendChart","catChart","sourceChart","medChart"].forEach(id=>{if(charts[id]){charts[id].destroy();delete charts[id];}});
 }
 
