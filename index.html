@@ -246,6 +246,25 @@ tr:hover td{background:rgba(123,47,247,0.02);}
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
+/* ── Link Performance ───────────────────────────────────────── */
+.link-upload-zone{border:2px dashed rgba(233,30,140,0.3);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,rgba(123,47,247,0.02),rgba(233,30,140,0.02));margin-top:14px;}
+.link-upload-zone:hover,.link-upload-zone.drag{border-color:#E91E8C;background:rgba(233,30,140,0.04);}
+.link-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:16px;}
+.link-table th{text-align:left;padding:9px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:#FAFAFA;border-bottom:1px solid var(--border);}
+.link-table td{padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.04);vertical-align:middle;}
+.link-table tr:last-child td{border-bottom:none;}
+.link-table tr:hover td{background:rgba(123,47,247,0.02);}
+.link-url{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);}
+.link-dest{font-size:11px;color:var(--muted);margin-top:2px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.link-clicks-num{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:#E91E8C;}
+.ai-thinking{display:flex;align-items:center;gap:10px;padding:20px;color:var(--muted);font-size:13px;justify-content:center;}
+.ai-spinner{width:18px;height:18px;border:2px solid #f0eef5;border-top-color:#7B2FF7;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.link-preview{max-width:100%;border-radius:8px;margin-top:12px;border:1px solid var(--border);}
+.link-bar-wrap{display:flex;align-items:center;gap:8px;}
+.link-bar-track{height:4px;background:#F0EEF5;border-radius:2px;width:80px;flex-shrink:0;}
+.link-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,#7B2FF7,#E91E8C);}
+
 /* ── Empty ─────────────────────────────────────────────────── */
 .empty{text-align:center;padding:64px 20px;}
 .empty-icon{font-size:44px;margin-bottom:14px;display:block;}
@@ -378,6 +397,51 @@ tr:hover td{background:rgba(123,47,247,0.02);}
     </div>
   </div>
 
+
+  <!-- Link Performance -->
+  <div class="section-label">Link Performance</div>
+  <div class="chart-card" style="margin-bottom:24px;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <div>
+        <div class="chart-name">short.io Click Tracking</div>
+        <div class="chart-desc">Upload a screenshot of your short.io dashboard — AI reads clicks automatically</div>
+      </div>
+      <div id="linkAdminControls" style="display:none;gap:8px;display:none;">
+        <button class="btn-publish" onclick="document.getElementById('linkFileInput').click()" style="font-size:11px;padding:7px 14px;">📷 Upload Screenshot</button>
+        <button class="btn btn-danger" onclick="clearLinks()" style="font-size:11px;">Clear</button>
+      </div>
+    </div>
+    <input type="file" id="linkFileInput" accept="image/*" style="display:none" onchange="handleLinkScreenshot(this.files[0])"/>
+
+    <!-- Upload zone (admin only, shown when no data) -->
+    <div id="linkUploadZone" style="display:none;">
+      <div class="link-upload-zone" id="linkDropZone"
+        onclick="document.getElementById('linkFileInput').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="event.preventDefault();this.classList.remove('drag');handleLinkScreenshot(event.dataTransfer.files[0])">
+        <div style="font-size:28px;margin-bottom:8px;">📷</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Upload your short.io screenshot</div>
+        <div style="font-size:12px;color:var(--muted);">AI will read the links and click counts automatically</div>
+      </div>
+    </div>
+
+    <!-- AI processing state -->
+    <div id="linkThinking" style="display:none;">
+      <div class="ai-thinking">
+        <div class="ai-spinner"></div>
+        Reading your screenshot — extracting link data…
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="linkResults"></div>
+
+    <!-- Empty state for clients -->
+    <div id="linkEmpty" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;">
+      Link performance data will appear here once admin uploads a screenshot.
+    </div>
+  </div>
 
 </main>
 
@@ -745,6 +809,144 @@ function showToast(msg){const t=document.createElement("div");t.className="toast
     else renderEmpty();
   }
 })();
+
+// ── Link Performance ──────────────────────────────────────────
+let linkData = [];
+
+function initLinkSection(){
+  const saved = localStorage.getItem("wesness_links");
+  const savedTime = localStorage.getItem("wesness_links_time");
+  if(saved){
+    try{
+      linkData = JSON.parse(saved);
+      renderLinkTable(linkData);
+      return;
+    }catch{}
+  }
+  // Show appropriate state
+  if(isAdmin){
+    document.getElementById("linkUploadZone").style.display = "block";
+    document.getElementById("linkAdminControls").style.display = "none";
+  } else {
+    document.getElementById("linkEmpty").style.display = "block";
+  }
+}
+
+function handleLinkScreenshot(file){
+  if(!file) return;
+  document.getElementById("linkUploadZone").style.display = "none";
+  document.getElementById("linkEmpty").style.display = "none";
+  document.getElementById("linkResults").innerHTML = "";
+  document.getElementById("linkThinking").style.display = "block";
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(",")[1];
+    const mediaType = file.type || "image/png";
+    try{
+      const res = await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          model:"claude-sonnet-4-6",
+          max_tokens:1000,
+          messages:[{
+            role:"user",
+            content:[
+              {type:"image",source:{type:"base64",media_type:mediaType,data:base64}},
+              {type:"text",text:`This is a short.io dashboard screenshot. Extract every row visible in the links table.
+Return ONLY a valid JSON array, no explanation, no markdown, no backticks:
+[
+  {
+    "created": "date shown e.g. Aug 20, 2026",
+    "shortUrl": "the short link path e.g. reg.wesness.com/stsc",
+    "tags": "tag label shown e.g. Sundowner event",
+    "clicks": 1234,
+    "conversions": 0
+  }
+]
+Rules: clicks and conversions must be plain numbers (1.2k = 1200). Extract every visible row. Return ONLY the JSON array.`}
+            ]
+          }]
+        })
+      });
+      const data = await res.json();
+      const text = data.content?.find(b=>b.type==="text")?.text || "[]";
+      const clean = text.replace(/```json|```/g,"").trim();
+      const links = JSON.parse(clean);
+      linkData = links;
+      localStorage.setItem("wesness_links", JSON.stringify(links));
+      localStorage.setItem("wesness_links_time", new Date().toISOString());
+      document.getElementById("linkThinking").style.display = "none";
+      renderLinkTable(links);
+      showToast("✓ "+links.length+" links extracted");
+    }catch(err){
+      document.getElementById("linkThinking").style.display = "none";
+      document.getElementById("linkResults").innerHTML = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px;">⚠ Could not read screenshot — try a clearer image</div>`;
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function renderLinkTable(links){
+  if(!links.length){
+    document.getElementById("linkEmpty").style.display = "block";
+    return;
+  }
+  const maxClicks = Math.max(...links.map(l=>l.clicks||0), 1);
+  if(isAdmin){
+    document.getElementById("linkAdminControls").style.display = "flex";
+  }
+  document.getElementById("linkEmpty").style.display = "none";
+  const totalClk = links.reduce((s,l)=>s+(l.clicks||0),0);
+  const totalCnv = links.reduce((s,l)=>s+(l.conversions||0),0);
+  document.getElementById("linkResults").innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px;">
+      <div style="background:linear-gradient(135deg,rgba(123,47,247,0.06),rgba(233,30,140,0.06));border:1px solid rgba(193,53,132,0.15);border-radius:10px;padding:14px 18px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Total Clicks</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:#7B2FF7;">${Number(totalClk).toLocaleString("en-IN")}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">across ${links.length} links</div>
+      </div>
+      <div style="background:linear-gradient(135deg,rgba(233,30,140,0.06),rgba(123,47,247,0.06));border:1px solid rgba(193,53,132,0.15);border-radius:10px;padding:14px 18px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;">Total Conversions</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:#E91E8C;">${Number(totalCnv).toLocaleString("en-IN")}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">via short links</div>
+      </div>
+    </div>
+    <table class="link-table">
+      <thead><tr><th>Created</th><th>Short Link</th><th>Tags</th><th>Clicks</th><th>Conversions</th><th>Share</th></tr></thead>
+      <tbody>${links.sort((a,b)=>(b.clicks||0)-(a.clicks||0)).map((l,i)=>`
+        <tr>
+          <td style="color:var(--muted);font-size:11px;white-space:nowrap">${l.created||"—"}</td>
+          <td><div class="link-url">${l.shortUrl||"—"}</div></td>
+          <td><span style="background:rgba(123,47,247,0.08);color:#7B2FF7;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap;">${l.tags||"—"}</span></td>
+          <td><span class="link-clicks-num">${l.clicks!=null?Number(l.clicks).toLocaleString("en-IN"):"—"}</span></td>
+          <td><span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:#E91E8C;">${l.conversions!=null?Number(l.conversions).toLocaleString("en-IN"):"—"}</span></td>
+          <td><div class="link-bar-wrap"><div class="link-bar-track"><div class="link-bar-fill" style="width:${maxClicks>0?((l.clicks||0)/maxClicks*100).toFixed(1):0}%"></div></div><span style="font-size:11px;color:var(--muted)">${totalClk>0?((l.clicks||0)/totalClk*100).toFixed(1):0}%</span></div></td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px;text-align:right;">
+      Last updated: ${localStorage.getItem("wesness_links_time")?new Date(localStorage.getItem("wesness_links_time")).toLocaleString():"just now"}
+      ${isAdmin?` · <span style="cursor:pointer;color:var(--accent)" onclick="document.getElementById('linkFileInput').click()">Upload new screenshot</span>`:""}
+    </div>`;
+}
+
+function clearLinks(){
+  if(!confirm("Clear link data?")) return;
+  linkData = [];
+  localStorage.removeItem("wesness_links");
+  localStorage.removeItem("wesness_links_time");
+  document.getElementById("linkResults").innerHTML = "";
+  document.getElementById("linkAdminControls").style.display = "none";
+  document.getElementById("linkUploadZone").style.display = isAdmin?"block":"none";
+  document.getElementById("linkEmpty").style.display = isAdmin?"none":"block";
+  showToast("Link data cleared");
+}
+
+// Init link section after page loads
+setTimeout(initLinkSection, 300);
 </script>
 </body>
 </html>
